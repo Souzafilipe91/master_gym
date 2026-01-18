@@ -5,12 +5,20 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import Biblioteca from "./pages/Biblioteca";
+import TreinoDetalhes from "./pages/TreinoDetalhes";
+import Historico from "./pages/Historico";
+import Progresso from "./pages/Progresso";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/biblioteca"} component={Biblioteca} />
+      <Route path={"/treino/:code"} component={TreinoDetalhes} />
+      <Route path={"/historico"} component={Historico} />
+      <Route path={"/progresso"} component={Progresso} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -27,7 +35,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider
-        defaultTheme="light"
+        defaultTheme="dark"
         // switchable
       >
         <TooltipProvider>

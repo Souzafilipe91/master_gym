@@ -1,30 +1,198 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
-import { Streamdown } from 'streamdown';
+import { trpc } from "@/lib/trpc";
+import { Dumbbell, Calendar, TrendingUp, Activity, User, LogOut } from "lucide-react";
+import { Link } from "wouter";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
 export default function Home() {
-  // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const { user, loading, isAuthenticated, logout } = useAuth();
+  const { data: cycles } = trpc.cycles.getAll.useQuery();
+  const { data: workoutTypes } = trpc.workoutTypes.getAll.useQuery();
 
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Dumbbell className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/10">
+        <div className="container max-w-4xl">
+          <Card className="border-primary/30 shadow-2xl shadow-primary/20">
+            <CardHeader className="text-center space-y-4 pb-8">
+              <div className="flex justify-center">
+                <div className="p-4 bg-primary/10 rounded-full">
+                  <Dumbbell className="w-16 h-16 text-primary" />
+                </div>
+              </div>
+              <CardTitle className="text-4xl font-bold">
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Filipe Treinos
+                </span>
+              </CardTitle>
+              <CardDescription className="text-lg">
+                Programa de Treino Personalizado de 1 Ano
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="text-center p-4 bg-card rounded-lg border border-border">
+                  <Calendar className="w-8 h-8 mx-auto mb-2 text-primary" />
+                  <h3 className="font-semibold">4 Ciclos</h3>
+                  <p className="text-sm text-muted-foreground">52 Semanas</p>
+                </div>
+                <div className="text-center p-4 bg-card rounded-lg border border-border">
+                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-primary" />
+                  <h3 className="font-semibold">Progressão</h3>
+                  <p className="text-sm text-muted-foreground">Automática</p>
+                </div>
+                <div className="text-center p-4 bg-card rounded-lg border border-border">
+                  <Activity className="w-8 h-8 mx-auto mb-2 text-primary" />
+                  <h3 className="font-semibold">Treinos</h3>
+                  <p className="text-sm text-muted-foreground">A, B, C, D</p>
+                </div>
+              </div>
+              <div className="text-center pt-4">
+                <Button asChild size="lg" className="w-full md:w-auto">
+                  <a href={getLoginUrl()}>
+                    <User className="w-4 h-4 mr-2" />
+                    Entrar na Plataforma
+                  </a>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Dashboard para usuário autenticado
+  const currentCycle = cycles?.[0]; // Por enquanto, sempre mostra o primeiro ciclo
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Dumbbell className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Filipe Treinos</h1>
+                <p className="text-sm text-muted-foreground">Programa de 1 Ano</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right hidden md:block">
+                <p className="text-sm font-medium">{user?.name || "Filipe Pimenta de Souza"}</p>
+                <p className="text-xs text-muted-foreground">Peso: {user?.currentWeight || "83"}kg</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => logout()}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container py-8">
+        {/* Ciclo Atual */}
+        <div className="mb-8">
+          <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5">
+            <CardHeader>
+              <CardTitle className="text-2xl">Ciclo Atual</CardTitle>
+              <CardDescription>{currentCycle?.name}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Objetivo</p>
+                  <p className="font-medium">{currentCycle?.objective}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Foco</p>
+                  <p className="font-medium">{currentCycle?.focus}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Período</p>
+                  <p className="font-medium">Semanas {currentCycle?.startWeek}-{currentCycle?.endWeek}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Treinos da Semana */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">Treinos da Semana</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {workoutTypes?.map((workout) => (
+              <Link key={workout.id} href={`/treino/${workout.code}`}>
+                <Card className="hover:border-primary/50 transition-all cursor-pointer hover:shadow-lg hover:shadow-primary/10">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-lg font-bold text-primary">{workout.code}</span>
+                      </div>
+                      <span>Treino {workout.code}</span>
+                    </CardTitle>
+                    <CardDescription>{workout.name}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      <Activity className="w-4 h-4 inline mr-1" />
+                      {workout.duration} minutos
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Menu Rápido */}
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Menu</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Link href="/biblioteca">
+              <Card className="hover:border-primary/50 transition-all cursor-pointer">
+                <CardHeader>
+                  <CardTitle>Biblioteca de Exercícios</CardTitle>
+                  <CardDescription>Explore todos os exercícios disponíveis</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+            <Link href="/historico">
+              <Card className="hover:border-primary/50 transition-all cursor-pointer">
+                <CardHeader>
+                  <CardTitle>Histórico</CardTitle>
+                  <CardDescription>Veja seus treinos realizados</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+            <Link href="/progresso">
+              <Card className="hover:border-primary/50 transition-all cursor-pointer">
+                <CardHeader>
+                  <CardTitle>Progresso</CardTitle>
+                  <CardDescription>Acompanhe sua evolução</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          </div>
+        </div>
       </main>
     </div>
   );
