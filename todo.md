@@ -135,3 +135,13 @@
 - [x] Adicionar botão de edição no perfil da sidebar
 - [x] Permitir ajuste manual de cargas dos exercícios
 - [ ] Salvar cargas personalizadas no banco de dados (estado local por enquanto)
+
+
+## GIFs Demonstrativos de Exercícios
+
+- [x] Adicionar campo gifUrl na tabela exercises
+- [x] Buscar e adicionar URLs de GIFs para todos os exercícios (14 exercícios com GIFs)
+- [x] Exibir GIF na página de detalhes do treino (lazy loading)
+- [x] Criar modal expandido para visualização ampliada do GIF
+- [ ] Adicionar instruções de execução junto com o GIF
+- [ ] Adicionar GIFs para os exercícios restantes (36 exercícios sem GIF)

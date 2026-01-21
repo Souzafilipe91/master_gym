@@ -122,6 +122,7 @@ export const exercises = mysqlTable("exercises", {
   description: text("description"),
   videoUrl: varchar("videoUrl", { length: 512 }),
   imageUrl: varchar("imageUrl", { length: 512 }),
+  gifUrl: varchar("gifUrl", { length: 512 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

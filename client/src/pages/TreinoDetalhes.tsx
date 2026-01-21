@@ -6,11 +6,13 @@ import { ArrowLeft, Dumbbell, Clock, TrendingUp, Info } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { useState } from "react";
 import { EditLoadDialog } from "@/components/EditLoadDialog";
+import { ExerciseGifModal } from "@/components/ExerciseGifModal";
 
 export default function TreinoDetalhes() {
   const params = useParams<{ code: string }>();
   const workoutCode = params.code?.toUpperCase();
   const [customLoads, setCustomLoads] = useState<Record<number, number>>({});
+  const [selectedGif, setSelectedGif] = useState<{ name: string; url: string } | null>(null);
 
   const { data: workoutType } = trpc.workoutTypes.getByCode.useQuery(
     { code: workoutCode || "" },
@@ -33,6 +35,7 @@ export default function TreinoDetalhes() {
     return {
       ...we,
       exerciseName: exercise?.name || "Exercício",
+      gifUrl: exercise?.gifUrl,
     };
   });
 
@@ -123,7 +126,20 @@ export default function TreinoDetalhes() {
             {exercisesWithDetails?.map((exercise, index) => (
               <Card key={exercise.id} className="hover:border-primary/50 transition-all">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-4">
+                    {exercise.gifUrl && (
+                      <div 
+                        className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                        onClick={() => setSelectedGif({ name: exercise.exerciseName, url: exercise.gifUrl! })}
+                      >
+                        <img
+                          src={exercise.gifUrl}
+                          alt={`Demo: ${exercise.exerciseName}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
                     <div className="flex-1">
                       <CardTitle className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -197,6 +213,16 @@ export default function TreinoDetalhes() {
           </Card>
         </div>
       </main>
+
+      {/* Modal de GIF */}
+      {selectedGif && (
+        <ExerciseGifModal
+          open={!!selectedGif}
+          onOpenChange={(open) => !open && setSelectedGif(null)}
+          exerciseName={selectedGif.name}
+          gifUrl={selectedGif.url}
+        />
+      )}
     </div>
   );
 }
