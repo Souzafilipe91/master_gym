@@ -252,10 +252,10 @@ export async function createCardioLog(data: typeof cardioLogs.$inferInsert) {
 // Anamnese
 export async function getAnamneseByUserId(userId: number) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return null;
   
   const result = await db.select().from(anamneses).where(eq(anamneses.userId, userId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? result[0] : null;
 }
 
 export async function createAnamnese(data: InsertAnamnese) {

@@ -109,3 +109,8 @@
 - [x] Interface para solicitar geração de treino
 - [x] Exibir treino gerado com opção de salvar
 - [ ] Histórico de treinos gerados por IA
+
+
+## Bugs Reportados
+
+- [x] Corrigir query anamnese.getMy retornando undefined em vez de null quando usuário não tem anamnese
