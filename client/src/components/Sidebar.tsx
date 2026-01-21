@@ -99,7 +99,7 @@ export function Sidebar({ className }: SidebarProps) {
           className
         )}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full pt-14 md:pt-0">
           {/* Logo/Header */}
           <div className="p-6 border-b border-border">
             <Link href="/" onClick={() => setIsOpen(false)}>

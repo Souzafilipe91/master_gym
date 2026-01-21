@@ -125,3 +125,5 @@
 - [x] Criar barra superior (header) mobile com botão de menu
 - [x] Remover botão flutuante que sobrepõe conteúdo
 - [x] Adicionar logo e informações do usuário no header mobile
+
+- [x] Ajustar padding-top do sidebar mobile para não sobrepor com header
