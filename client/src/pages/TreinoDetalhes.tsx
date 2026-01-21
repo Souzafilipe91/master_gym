@@ -4,10 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Dumbbell, Clock, TrendingUp, Info } from "lucide-react";
 import { Link, useParams } from "wouter";
+import { useState } from "react";
+import { EditLoadDialog } from "@/components/EditLoadDialog";
 
 export default function TreinoDetalhes() {
   const params = useParams<{ code: string }>();
   const workoutCode = params.code?.toUpperCase();
+  const [customLoads, setCustomLoads] = useState<Record<number, number>>({});
 
   const { data: workoutType } = trpc.workoutTypes.getByCode.useQuery(
     { code: workoutCode || "" },
@@ -149,8 +152,17 @@ export default function TreinoDetalhes() {
                       <p className="font-semibold">{exercise.reps}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Carga Inicial</p>
-                      <p className="font-semibold">{exercise.initialLoad}kg</p>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs text-muted-foreground">Carga Inicial</p>
+                        <EditLoadDialog
+                          exerciseName={exercise.exerciseName}
+                          currentLoad={(customLoads[exercise.id] ?? exercise.initialLoad).toString()}
+                          onSave={(newLoad) => setCustomLoads(prev => ({ ...prev, [exercise.id]: newLoad }))}
+                        />
+                      </div>
+                      <p className="font-semibold">
+                        {customLoads[exercise.id] ?? exercise.initialLoad}kg
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Progressão</p>

@@ -217,10 +217,10 @@ export async function createWeightLog(data: typeof weightLogs.$inferInsert) {
   return result;
 }
 
-export async function updateUserWeight(userId: number, weight: string) {
+export async function updateUserWeight(userId: number, weight: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(users).set({ currentWeight: weight }).where(eq(users.id, userId));
+  await db.update(users).set({ currentWeight: weight.toString() }).where(eq(users.id, userId));
 }
 
 // Cardio Recommendations

@@ -127,3 +127,11 @@
 - [x] Adicionar logo e informações do usuário no header mobile
 
 - [x] Ajustar padding-top do sidebar mobile para não sobrepor com header
+
+## Funcionalidades de Edição
+
+- [x] Criar modal de edição de peso corporal do usuário
+- [x] Implementar backend (tRPC) para atualizar peso do usuário
+- [x] Adicionar botão de edição no perfil da sidebar
+- [x] Permitir ajuste manual de cargas dos exercícios
+- [ ] Salvar cargas personalizadas no banco de dados (estado local por enquanto)

@@ -15,6 +15,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { EditWeightDialog } from "./EditWeightDialog";
 
 interface SidebarProps {
   className?: string;
@@ -142,7 +143,10 @@ export function Sidebar({ className }: SidebarProps) {
           <div className="p-4 border-t border-border">
             <div className="mb-3 p-3 bg-background rounded-lg">
               <p className="text-sm font-medium truncate">{user?.name || "Filipe Pimenta de Souza"}</p>
-              <p className="text-xs text-muted-foreground">Peso: {user?.currentWeight || "83"}kg</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">Peso: {user?.currentWeight || "83"}kg</p>
+                <EditWeightDialog currentWeight={user?.currentWeight} />
+              </div>
             </div>
             <Button
               variant="outline"

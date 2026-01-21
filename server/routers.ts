@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { updateUserWeight } from "./db";
 
 export const appRouter = router({
   system: systemRouter,
@@ -13,8 +14,19 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return { success: true } as const;
+      return {
+        success: true,
+      } as const;
     }),
+  }),
+
+  user: router({
+    updateWeight: protectedProcedure
+      .input(z.object({ weight: z.number().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        await updateUserWeight(ctx.user.id, input.weight);
+        return { success: true };
+      }),
   }),
 
   // Ciclos
@@ -151,7 +163,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         // Atualizar peso atual do usuário
-        await db.updateUserWeight(ctx.user.id, input.weight);
+        await db.updateUserWeight(ctx.user.id, parseFloat(input.weight));
         // Criar log de peso
         return await db.createWeightLog({
           userId: ctx.user.id,
@@ -325,7 +337,7 @@ Formate a resposta em Markdown com seções claras e bem organizadas.`;
   // Profile
   profile: router({
     updateWeight: protectedProcedure
-      .input(z.object({ weight: z.string() }))
+      .input(z.object({ weight: z.number().positive() }))
       .mutation(async ({ ctx, input }) => {
         await db.updateUserWeight(ctx.user.id, input.weight);
         return { success: true };
