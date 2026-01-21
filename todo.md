@@ -121,3 +121,7 @@
 - [x] Criar página "Meus Treinos" com os 4 treinos (A, B, C, D)
 - [x] Simplificar Dashboard mantendo apenas card do ciclo atual
 - [x] Remover seção de treinos do Dashboard
+
+- [x] Criar barra superior (header) mobile com botão de menu
+- [x] Remover botão flutuante que sobrepõe conteúdo
+- [x] Adicionar logo e informações do usuário no header mobile
