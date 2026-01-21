@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { Dumbbell, Calendar, TrendingUp, Activity, User } from "lucide-react";
+import { Dumbbell, TrendingUp, User, Calendar, Activity } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
   const { user, loading, isAuthenticated } = useAuth();
   const { data: cycles } = trpc.cycles.getAll.useQuery();
-  const { data: workoutTypes } = trpc.workoutTypes.getAll.useQuery();
+
 
   if (loading) {
     return (
@@ -107,38 +107,21 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Treinos da Semana */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Treinos da Semana</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {workoutTypes?.map((workout) => (
-              <Link key={workout.id} href={`/treino/${workout.code}`}>
-                <Card className="hover:border-primary/50 transition-all cursor-pointer hover:shadow-lg hover:shadow-primary/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-lg font-bold text-primary">{workout.code}</span>
-                      </div>
-                      <span>Treino {workout.code}</span>
-                    </CardTitle>
-                    <CardDescription>{workout.name}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      <Activity className="w-4 h-4 inline mr-1" />
-                      {workout.duration} minutos
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Menu Rápido */}
+        {/* Acesso Rápido */}
         <div>
-          <h2 className="text-2xl font-bold mb-4">Menu</h2>
+          <h2 className="text-2xl font-bold mb-4">Acesso Rápido</h2>
           <div className="grid gap-4 md:grid-cols-3">
+            <Link href="/treinos">
+              <Card className="hover:border-primary/50 transition-all cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Dumbbell className="w-5 h-5 text-primary" />
+                    Meus Treinos
+                  </CardTitle>
+                  <CardDescription>Ver todos os treinos (A, B, C, D)</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
             <Link href="/biblioteca">
               <Card className="hover:border-primary/50 transition-all cursor-pointer">
                 <CardHeader>

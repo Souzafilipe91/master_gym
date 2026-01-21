@@ -13,6 +13,7 @@ import Progresso from "./pages/Progresso";
 import Anamnese from "./pages/Anamnese";
 import AnamneseForm from "./pages/AnamneseForm";
 import GerarTreino from "./pages/GerarTreino";
+import MeusTreinos from "./pages/MeusTreinos";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -27,6 +28,7 @@ function Router() {
         <Route path={"/anamnese"} component={Anamnese} />
         <Route path={"/anamnese/preencher"} component={AnamneseForm} />
         <Route path={"/gerar-treino"} component={GerarTreino} />
+        <Route path={"/treinos"} component={MeusTreinos} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

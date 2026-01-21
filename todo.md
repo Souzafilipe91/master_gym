@@ -114,3 +114,10 @@
 ## Bugs Reportados
 
 - [x] Corrigir query anamnese.getMy retornando undefined em vez de null quando usuário não tem anamnese
+
+
+## Melhorias de UX Solicitadas
+
+- [x] Criar página "Meus Treinos" com os 4 treinos (A, B, C, D)
+- [x] Simplificar Dashboard mantendo apenas card do ciclo atual
+- [x] Remover seção de treinos do Dashboard
