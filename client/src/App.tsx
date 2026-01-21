@@ -3,26 +3,35 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { Layout } from "./components/Layout";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Biblioteca from "./pages/Biblioteca";
 import TreinoDetalhes from "./pages/TreinoDetalhes";
 import Historico from "./pages/Historico";
 import Progresso from "./pages/Progresso";
+import Anamnese from "./pages/Anamnese";
+import AnamneseForm from "./pages/AnamneseForm";
+import GerarTreino from "./pages/GerarTreino";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/biblioteca"} component={Biblioteca} />
-      <Route path={"/treino/:code"} component={TreinoDetalhes} />
-      <Route path={"/historico"} component={Historico} />
-      <Route path={"/progresso"} component={Progresso} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <Layout>
+      <Switch>
+        <Route path={"/"} component={Home} />
+        <Route path={"/biblioteca"} component={Biblioteca} />
+        <Route path={"/treino/:code"} component={TreinoDetalhes} />
+        <Route path={"/historico"} component={Historico} />
+        <Route path={"/progresso"} component={Progresso} />
+        <Route path={"/anamnese"} component={Anamnese} />
+        <Route path={"/anamnese/preencher"} component={AnamneseForm} />
+        <Route path={"/gerar-treino"} component={GerarTreino} />
+        <Route path={"/404"} component={NotFound} />
+        {/* Final fallback route */}
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 }
 

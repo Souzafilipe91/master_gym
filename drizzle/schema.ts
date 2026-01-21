@@ -15,12 +15,60 @@ export const users = mysqlTable("users", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
-
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
- * Ciclos do programa anual (4 ciclos de 12 semanas cada)
+ * Tabela de anamnese dos usuários
+ */
+export const anamneses = mysqlTable("anamneses", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  // Dados pessoais
+  age: int("age"),
+  height: varchar("height", { length: 10 }),
+  currentWeight: varchar("currentWeight", { length: 10 }),
+  targetWeight: varchar("targetWeight", { length: 10 }),
+  gender: varchar("gender", { length: 20 }),
+  // Objetivos
+  primaryGoal: text("primaryGoal"),
+  secondaryGoals: text("secondaryGoals"),
+  // Histórico de treino
+  trainingExperience: text("trainingExperience"),
+  currentTrainingFrequency: varchar("currentTrainingFrequency", { length: 50 }),
+  previousInjuries: text("previousInjuries"),
+  // Restrições e limitações
+  medicalRestrictions: text("medicalRestrictions"),
+  exerciseRestrictions: text("exerciseRestrictions"),
+  // Disponibilidade
+  availableDays: text("availableDays"),
+  sessionDuration: varchar("sessionDuration", { length: 50 }),
+  // Estilo de vida
+  occupation: varchar("occupation", { length: 100 }),
+  activityLevel: varchar("activityLevel", { length: 50 }),
+  sleepHours: varchar("sleepHours", { length: 20 }),
+  stressLevel: varchar("stressLevel", { length: 20 }),
+  // Nutrição
+  dietType: varchar("dietType", { length: 50 }),
+  supplementation: text("supplementation"),
+  // Medidas corporais
+  chest: varchar("chest", { length: 10 }),
+  waist: varchar("waist", { length: 10 }),
+  hips: varchar("hips", { length: 10 }),
+  thigh: varchar("thigh", { length: 10 }),
+  arm: varchar("arm", { length: 10 }),
+  bodyFat: varchar("bodyFat", { length: 10 }),
+  // Observações
+  additionalNotes: text("additionalNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Anamnese = typeof anamneses.$inferSelect;
+export type InsertAnamnese = typeof anamneses.$inferInsert;
+
+/**
+ * Programa Anual (4 ciclos de 12 semanas cada)
  */
 export const cycles = mysqlTable("cycles", {
   id: int("id").autoincrement().primaryKey(),

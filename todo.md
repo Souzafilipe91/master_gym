@@ -81,3 +81,31 @@
 - [x] Popular banco de dados com programa de 1 ano
 - [x] Popular biblioteca de exercícios
 - [x] Configurar dados iniciais do usuário Filipe
+
+
+## Novas Funcionalidades Solicitadas
+
+### Menu Lateral (Sidebar)
+- [x] Criar sidebar estilo Ramon Dino com navegação organizada
+- [x] Seções: Dashboard, Meus Treinos, Biblioteca, Anamnese, Progresso, Histórico
+- [x] Menu colasável para mobile
+- [x] Indicador visual da página atual
+
+### Seção de Anamnese
+- [x] Página dedicada mostrando anamnese completa do usuário
+- [x] Exibir todas as informações do Check Shape
+- [x] Layout organizado e fácil de ler
+- [ ] Permitir edição da anamnese
+
+### Formulário de Anamnese para Novos Usuários
+- [x] Formulário completo de anamnese
+- [x] Campos: dados pessoais, objetivos, histórico de treino, restrições, medidas
+- [x] Validação de campos obrigatórios
+- [x] Salvar anamnese no banco de dados
+
+### Gerador de Treinos com IA
+- [x] Integrar LLM para análise de anamnese
+- [x] Criar endpoint para gerar treino personalizado
+- [x] Interface para solicitar geração de treino
+- [x] Exibir treino gerado com opção de salvar
+- [ ] Histórico de treinos gerados por IA

@@ -15,6 +15,13 @@
       "when": 1768748093495,
       "tag": "0001_free_luke_cage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1769017839906,
+      "tag": "0002_great_marrow",
+      "breakpoints": true
     }
   ]
 }

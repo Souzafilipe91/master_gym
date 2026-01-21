@@ -194,6 +194,134 @@ export const appRouter = router({
       }),
   }),
 
+  // Anamnese
+  anamnese: router({
+    getMy: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getAnamneseByUserId(ctx.user.id);
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        age: z.number().optional(),
+        height: z.string().optional(),
+        currentWeight: z.string().optional(),
+        targetWeight: z.string().optional(),
+        gender: z.string().optional(),
+        primaryGoal: z.string().optional(),
+        secondaryGoals: z.string().optional(),
+        trainingExperience: z.string().optional(),
+        currentTrainingFrequency: z.string().optional(),
+        previousInjuries: z.string().optional(),
+        medicalRestrictions: z.string().optional(),
+        exerciseRestrictions: z.string().optional(),
+        availableDays: z.string().optional(),
+        sessionDuration: z.string().optional(),
+        occupation: z.string().optional(),
+        activityLevel: z.string().optional(),
+        sleepHours: z.string().optional(),
+        stressLevel: z.string().optional(),
+        dietType: z.string().optional(),
+        supplementation: z.string().optional(),
+        chest: z.string().optional(),
+        waist: z.string().optional(),
+        hips: z.string().optional(),
+        thigh: z.string().optional(),
+        arm: z.string().optional(),
+        bodyFat: z.string().optional(),
+        additionalNotes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.createAnamnese({
+          userId: ctx.user.id,
+          ...input,
+        });
+      }),
+    generateWorkout: protectedProcedure
+      .input(z.object({
+        anamneseId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Buscar anamnese do usuário
+        const anamnese = await db.getAnamneseByUserId(ctx.user.id);
+        if (!anamnese) {
+          throw new Error("Anamnese não encontrada. Por favor, preencha sua anamnese primeiro.");
+        }
+
+        // Importar função de LLM
+        const { invokeLLM } = await import("./_core/llm");
+
+        // Preparar prompt com dados da anamnese
+        const prompt = `Você é um personal trainer especializado com anos de experiência. Analise a anamnese abaixo e crie um programa de treino personalizado.
+
+DADOS DO ALUNO:
+- Idade: ${anamnese.age} anos
+- Gênero: ${anamnese.gender}
+- Altura: ${anamnese.height} cm
+- Peso Atual: ${anamnese.currentWeight} kg
+- Peso Alvo: ${anamnese.targetWeight} kg
+- % Gordura: ${anamnese.bodyFat}%
+
+OBJETIVOS:
+- Principal: ${anamnese.primaryGoal}
+- Secundários: ${anamnese.secondaryGoals}
+
+EXPERIÊNCIA E HISTÓRICO:
+- Experiência: ${anamnese.trainingExperience}
+- Frequência atual: ${anamnese.currentTrainingFrequency}
+- Lesões anteriores: ${anamnese.previousInjuries || "Nenhuma"}
+
+RESTRIÇÕES:
+- Médicas: ${anamnese.medicalRestrictions || "Nenhuma"}
+- Exercícios a evitar: ${anamnese.exerciseRestrictions || "Nenhum"}
+
+DISPONIBILIDADE:
+- Dias disponíveis: ${anamnese.availableDays}
+- Duração da sessão: ${anamnese.sessionDuration}
+
+ESTILO DE VIDA:
+- Ocupação: ${anamnese.occupation}
+- Nível de atividade: ${anamnese.activityLevel}
+- Horas de sono: ${anamnese.sleepHours}
+- Nível de estresse: ${anamnese.stressLevel}
+
+NUTRIÇÃO:
+- Tipo de dieta: ${anamnese.dietType}
+- Suplementação: ${anamnese.supplementation}
+
+OBSERVAÇÕES:
+${anamnese.additionalNotes || "Nenhuma"}
+
+Crie um programa de treino completo e personalizado seguindo estas diretrizes:
+
+1. Divida o treino em 4 sessões (A, B, C, D) considerando os dias disponíveis
+2. Para cada treino, especifique:
+   - Nome do treino e grupos musculares trabalhados
+   - Lista de exercícios (8-12 por treino)
+   - Para cada exercício: nome, séries, repetições, carga inicial sugerida, tempo de descanso
+   - Técnicas avançadas quando aplicável (drop set, rest-pause, etc)
+3. Inclua recomendações de cardio (frequência, duração, intensidade)
+4. Sugira progressão de carga (quanto aumentar e quando)
+5. Dê dicas específicas baseadas nas restrições e objetivos
+
+Formate a resposta em Markdown com seções claras e bem organizadas.`;
+
+        // Chamar LLM
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Você é um personal trainer especializado e experiente. Crie programas de treino personalizados, detalhados e seguros baseados na anamnese do aluno." },
+            { role: "user", content: prompt },
+          ],
+        });
+
+        const workoutPlan = response.choices[0]?.message?.content || "Erro ao gerar treino";
+
+        return {
+          success: true,
+          workoutPlan,
+          anamnese,
+        };
+      }),
+  }),
+
   // Profile
   profile: router({
     updateWeight: protectedProcedure

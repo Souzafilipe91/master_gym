@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, cycles, workoutTypes, muscleGroups, exercises, 
   workoutExercises, workoutLogs, exerciseLogs, weightLogs, 
-  cardioRecommendations, cardioLogs 
+  cardioRecommendations, cardioLogs, anamneses, InsertAnamnese
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -246,5 +246,22 @@ export async function createCardioLog(data: typeof cardioLogs.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(cardioLogs).values(data);
+  return result;
+}
+
+// Anamnese
+export async function getAnamneseByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(anamneses).where(eq(anamneses.userId, userId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createAnamnese(data: InsertAnamnese) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(anamneses).values(data);
   return result;
 }
