@@ -148,3 +148,13 @@
 - [x] Buscar e adicionar GIFs para os 36 exercícios restantes
 - [x] Corrigir URLs de GIFs que não estão sendo exibidos (abdominal infra, prancha)
 - [x] Verificar que todos os GIFs carregam corretamente
+
+
+## PWA (Progressive Web App)
+
+- [x] Criar manifest.json com configurações do app
+- [x] Gerar ícones em todos os tamanhos (192x192, 512x512)
+- [x] Implementar Service Worker para cache offline
+- [x] Adicionar meta tags específicas para iOS
+- [x] Registrar Service Worker no main.tsx
+- [ ] Testar instalação no iPhone (requer teste do usuário)
