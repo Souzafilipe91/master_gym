@@ -144,4 +144,7 @@
 - [x] Exibir GIF na página de detalhes do treino (lazy loading)
 - [x] Criar modal expandido para visualização ampliada do GIF
 - [ ] Adicionar instruções de execução junto com o GIF
-- [ ] Adicionar GIFs para os exercícios restantes (36 exercícios sem GIF)
+-- [x] Adicionar GIFs para os exercícios restantes (46 exercícios no total)
+- [x] Buscar e adicionar GIFs para os 36 exercícios restantes
+- [x] Corrigir URLs de GIFs que não estão sendo exibidos (abdominal infra, prancha)
+- [x] Verificar que todos os GIFs carregam corretamente
