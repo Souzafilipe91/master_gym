@@ -8,6 +8,8 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 import { registerServiceWorker } from "./registerSW";
+import { restoreScheduledReminders } from "./lib/notifications";
+import { initOfflineDB } from "./lib/offlineStorage";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +57,12 @@ const trpcClient = trpc.createClient({
 
 // Register Service Worker for PWA
 registerServiceWorker();
+
+// Initialize offline database
+initOfflineDB().catch(console.error);
+
+// Restore scheduled workout reminders
+restoreScheduledReminders();
 
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>

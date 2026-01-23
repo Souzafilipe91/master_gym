@@ -3,9 +3,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { Layout } from "./components/Layout";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import { OnlineStatus } from "./components/OnlineStatus";
+import { Layout } from "./components/Layout";
 import Biblioteca from "./pages/Biblioteca";
 import TreinoDetalhes from "./pages/TreinoDetalhes";
 import Historico from "./pages/Historico";
@@ -51,6 +52,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
+          <OnlineStatus />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

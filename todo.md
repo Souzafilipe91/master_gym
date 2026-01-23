@@ -158,3 +158,19 @@
 - [x] Adicionar meta tags específicas para iOS
 - [x] Registrar Service Worker no main.tsx
 - [ ] Testar instalação no iPhone (requer teste do usuário)
+
+
+## Notificações Push
+
+- [x] Implementar solicitação de permissão de notificações
+- [x] Criar sistema de agendamento de lembretes de treino
+- [x] Adicionar configurações de notificações no Dashboard
+- [ ] Testar notificações no iPhone (requer teste do usuário)
+
+## Modo Offline Completo
+
+- [x] Expandir Service Worker para cachear dados de treinos
+- [x] Implementar IndexedDB para armazenamento local
+- [x] Criar fila de sincronização para ações offline
+- [x] Sincronização automática quando voltar online
+- [x] Indicador visual de status online/offline
