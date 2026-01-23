@@ -109,7 +109,7 @@ export function Sidebar({ className }: SidebarProps) {
                   <Dumbbell className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold">Filipe Treinos</h1>
+                  <h1 className="text-lg font-bold">Master Gym</h1>
                   <p className="text-xs text-muted-foreground">Programa de 1 Ano</p>
                 </div>
               </div>
