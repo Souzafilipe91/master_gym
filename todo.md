@@ -174,3 +174,6 @@
 - [x] Criar fila de sincronização para ações offline
 - [x] Sincronização automática quando voltar online
 - [x] Indicador visual de status online/offline
+
+- [x] Corrigir loop de redirecionamento entre tela de login e aplicação (resolvido)
+- [x] Corrigir GIFs dos exercícios que não estão sendo exibidos
