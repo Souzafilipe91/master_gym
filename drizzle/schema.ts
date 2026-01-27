@@ -233,3 +233,48 @@ export const cardioLogs = mysqlTable("cardio_logs", {
 
 export type CardioLog = typeof cardioLogs.$inferSelect;
 export type InsertCardioLog = typeof cardioLogs.$inferInsert;
+
+/**
+ * Conquistas/Badges disponíveis
+ */
+export const achievements = mysqlTable("achievements", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description").notNull(),
+  icon: varchar("icon", { length: 50 }).notNull(), // nome do ícone lucide
+  category: mysqlEnum("category", ["frequency", "milestone", "pr", "streak"]).notNull(),
+  requirement: int("requirement").notNull(), // valor numérico do requisito
+  points: int("points").notNull().default(10), // pontos ganhos ao desbloquear
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Achievement = typeof achievements.$inferSelect;
+export type InsertAchievement = typeof achievements.$inferInsert;
+
+/**
+ * Conquistas desbloqueadas pelos usuários
+ */
+export const userAchievements = mysqlTable("user_achievements", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  achievementId: int("achievementId").notNull(),
+  unlockedAt: timestamp("unlockedAt").defaultNow().notNull(),
+  progress: int("progress").default(0), // progresso atual (para conquistas progressivas)
+});
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = typeof userAchievements.$inferInsert;
+
+/**
+ * Sessões de treino (para tracking de tempo e execução)
+ */
+export const workoutSessions = mysqlTable("workout_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  workoutLogId: int("workoutLogId").notNull(),
+  startTime: timestamp("startTime").notNull(),
+  endTime: timestamp("endTime"),
+  duration: int("duration"), // em minutos
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type WorkoutSession = typeof workoutSessions.$inferSelect;
+export type InsertWorkoutSession = typeof workoutSessions.$inferInsert;

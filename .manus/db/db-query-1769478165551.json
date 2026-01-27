@@ -1,0 +1,27 @@
+{
+  "query": "SHOW CREATE TABLE achievements;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2eJZ6uYkQqqj2tc.root --database EVvjYMQDCpqg6oqAYCDCXo --execute SHOW CREATE TABLE achievements;",
+  "rows": [
+    {
+      "Table": "achievements",
+      "Create Table": "CREATE TABLE `achievements` ("
+    }
+  ],
+  "messages": [
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,",
+    "  `code` varchar(50) NOT NULL,",
+    "  `name` varchar(100) NOT NULL,",
+    "  `description` text NOT NULL,",
+    "  `icon` varchar(50) NOT NULL,",
+    "  `category` enum('frequency','milestone','pr','streak') NOT NULL,",
+    "  `requirement` int(11) NOT NULL,",
+    "  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,",
+    "  `points` int(11) NOT NULL DEFAULT '10',",
+    "  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,",
+    "  UNIQUE KEY `achievements_code_unique` (`code`)",
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin AUTO_INCREMENT=30001"
+  ],
+  "stdout": "Table\tCreate Table\nachievements\tCREATE TABLE `achievements` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `code` varchar(50) NOT NULL,\n  `name` varchar(100) NOT NULL,\n  `description` text NOT NULL,\n  `icon` varchar(50) NOT NULL,\n  `category` enum('frequency','milestone','pr','streak') NOT NULL,\n  `requirement` int(11) NOT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `points` int(11) NOT NULL DEFAULT '10',\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,\n  UNIQUE KEY `achievements_code_unique` (`code`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin AUTO_INCREMENT=30001\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

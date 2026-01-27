@@ -334,6 +334,21 @@ Formate a resposta em Markdown com seções claras e bem organizadas.`;
       }),
   }),
 
+  // Achievements
+  achievements: router({
+    getAll: publicProcedure.query(async () => {
+      return await db.getAllAchievements();
+    }),
+    getMy: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getUserAchievements(ctx.user.id);
+    }),
+    unlock: protectedProcedure
+      .input(z.object({ achievementId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.unlockAchievement(ctx.user.id, input.achievementId);
+      }),
+  }),
+
   // Profile
   profile: router({
     updateWeight: protectedProcedure

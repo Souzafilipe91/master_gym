@@ -3,7 +3,8 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, cycles, workoutTypes, muscleGroups, exercises, 
   workoutExercises, workoutLogs, exerciseLogs, weightLogs, 
-  cardioRecommendations, cardioLogs, anamneses, InsertAnamnese
+  cardioRecommendations, cardioLogs, anamneses, InsertAnamnese,
+  achievements, userAchievements
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -176,6 +177,12 @@ export async function createWorkoutLog(data: typeof workoutLogs.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(workoutLogs).values(data);
+  
+  // Verificar conquistas após criar log de treino
+  if (data.userId) {
+    await checkAndUnlockAchievements(data.userId);
+  }
+  
   return result;
 }
 
@@ -264,4 +271,115 @@ export async function createAnamnese(data: InsertAnamnese) {
   
   const result = await db.insert(anamneses).values(data);
   return result;
+}
+
+// Achievements
+export async function getAllAchievements() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(achievements).orderBy(achievements.category, achievements.points);
+}
+
+export async function getUserAchievements(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select({
+    id: userAchievements.id,
+    userId: userAchievements.userId,
+    achievementId: userAchievements.achievementId,
+    unlockedAt: userAchievements.unlockedAt,
+    progress: userAchievements.progress,
+    name: achievements.name,
+    description: achievements.description,
+    icon: achievements.icon,
+    category: achievements.category,
+    requirement: achievements.requirement,
+    points: achievements.points,
+  })
+  .from(userAchievements)
+  .innerJoin(achievements, eq(userAchievements.achievementId, achievements.id))
+  .where(eq(userAchievements.userId, userId));
+}
+
+export async function unlockAchievement(userId: number, achievementId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar se já foi desbloqueada
+  const existing = await db.select().from(userAchievements)
+    .where(and(
+      eq(userAchievements.userId, userId),
+      eq(userAchievements.achievementId, achievementId)
+    ))
+    .limit(1);
+  
+  if (existing.length > 0) {
+    return existing[0];
+  }
+  
+  const result = await db.insert(userAchievements).values({
+    userId,
+    achievementId,
+    progress: 100,
+  });
+  return result;
+}
+
+
+// Verificar e desbloquear conquistas automaticamente
+export async function checkAndUnlockAchievements(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  // Buscar todas as conquistas
+  const allAchievements = await db.select().from(achievements);
+  
+  // Buscar conquistas já desbloqueadas
+  const unlockedAchievements = await db.select()
+    .from(userAchievements)
+    .where(eq(userAchievements.userId, userId));
+  
+  const unlockedIds = new Set(unlockedAchievements.map(ua => ua.achievementId));
+
+  // Buscar estatísticas do usuário
+  const workoutCount = await db.select({ count: sql<number>`count(*)` })
+    .from(workoutLogs)
+    .where(and(
+      eq(workoutLogs.userId, userId),
+      eq(workoutLogs.completed, true)
+    ));
+  
+  const totalWorkouts = Number(workoutCount[0]?.count || 0);
+
+  // Verificar cada conquista
+  for (const achievement of allAchievements) {
+    if (unlockedIds.has(achievement.id)) continue; // Já desbloqueada
+
+    let shouldUnlock = false;
+
+    switch (achievement.category) {
+      case 'milestone':
+        // Conquistas baseadas em número de treinos
+        if (achievement.code.includes('workout')) {
+          shouldUnlock = totalWorkouts >= achievement.requirement;
+        }
+        break;
+      
+      case 'frequency':
+        // Conquistas de frequência (implementar lógica específica depois)
+        break;
+      
+      case 'pr':
+        // Conquistas de recordes pessoais (implementar depois)
+        break;
+      
+      case 'streak':
+        // Conquistas de sequências (implementar depois)
+        break;
+    }
+
+    if (shouldUnlock) {
+      await unlockAchievement(userId, achievement.id);
+    }
+  }
 }

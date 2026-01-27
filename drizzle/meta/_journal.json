@@ -29,6 +29,20 @@
       "when": 1769025610884,
       "tag": "0003_worthless_leo",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1769452337365,
+      "tag": "0004_young_the_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1769478471466,
+      "tag": "0005_early_gargoyle",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,8 @@ import Anamnese from "./pages/Anamnese";
 import AnamneseForm from "./pages/AnamneseForm";
 import GerarTreino from "./pages/GerarTreino";
 import MeusTreinos from "./pages/MeusTreinos";
+import ExecutarTreino from "./pages/ExecutarTreino";
+import Conquistas from "./pages/Conquistas";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -24,12 +26,14 @@ function Router() {
         <Route path={"/"} component={Home} />
         <Route path={"/biblioteca"} component={Biblioteca} />
         <Route path={"/treino/:code"} component={TreinoDetalhes} />
+        <Route path={"/treino/:code/registrar"} component={ExecutarTreino} />
         <Route path={"/historico"} component={Historico} />
         <Route path={"/progresso"} component={Progresso} />
         <Route path={"/anamnese"} component={Anamnese} />
         <Route path={"/anamnese/preencher"} component={AnamneseForm} />
         <Route path={"/gerar-treino"} component={GerarTreino} />
         <Route path={"/treinos"} component={MeusTreinos} />
+        <Route path={"/conquistas"} component={Conquistas} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

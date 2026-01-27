@@ -10,7 +10,8 @@ import {
   FileText,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Trophy
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -56,6 +57,11 @@ const menuItems = [
     title: "Histórico",
     href: "/historico",
     icon: History,
+  },
+  {
+    title: "Conquistas",
+    href: "/conquistas",
+    icon: Trophy,
   },
 ];
 

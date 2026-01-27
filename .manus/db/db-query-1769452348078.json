@@ -1,0 +1,60 @@
+{
+  "query": "SELECT * FROM achievements LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2eJZ6uYkQqqj2tc.root --database EVvjYMQDCpqg6oqAYCDCXo --execute SELECT * FROM achievements LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "code": "first_workout",
+      "name": "Primeiro Treino",
+      "description": "Complete seu primeiro treino",
+      "icon": "Dumbbell",
+      "category": "milestone",
+      "requirement": "1",
+      "createdAt": "2026-01-24 22:38:45"
+    },
+    {
+      "id": "2",
+      "code": "workouts_10",
+      "name": "Dedicação Inicial",
+      "description": "Complete 10 treinos",
+      "icon": "Target",
+      "category": "frequency",
+      "requirement": "10",
+      "createdAt": "2026-01-24 22:38:45"
+    },
+    {
+      "id": "3",
+      "code": "workouts_25",
+      "name": "Compromisso Firme",
+      "description": "Complete 25 treinos",
+      "icon": "Award",
+      "category": "frequency",
+      "requirement": "25",
+      "createdAt": "2026-01-24 22:38:45"
+    },
+    {
+      "id": "4",
+      "code": "workouts_50",
+      "name": "Meio Século",
+      "description": "Complete 50 treinos",
+      "icon": "Trophy",
+      "category": "frequency",
+      "requirement": "50",
+      "createdAt": "2026-01-24 22:38:45"
+    },
+    {
+      "id": "5",
+      "code": "workouts_100",
+      "name": "Centenário",
+      "description": "Complete 100 treinos",
+      "icon": "Crown",
+      "category": "frequency",
+      "requirement": "100",
+      "createdAt": "2026-01-24 22:38:45"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tname\tdescription\ticon\tcategory\trequirement\tcreatedAt\n1\tfirst_workout\tPrimeiro Treino\tComplete seu primeiro treino\tDumbbell\tmilestone\t1\t2026-01-24 22:38:45\n2\tworkouts_10\tDedicação Inicial\tComplete 10 treinos\tTarget\tfrequency\t10\t2026-01-24 22:38:45\n3\tworkouts_25\tCompromisso Firme\tComplete 25 treinos\tAward\tfrequency\t25\t2026-01-24 22:38:45\n4\tworkouts_50\tMeio Século\tComplete 50 treinos\tTrophy\tfrequency\t50\t2026-01-24 22:38:45\n5\tworkouts_100\tCentenário\tComplete 100 treinos\tCrown\tfrequency\t100\t2026-01-24 22:38:45\n",
+  "stderr": "",
+  "execution_time_ms": 97
+}

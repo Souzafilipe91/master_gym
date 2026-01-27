@@ -177,3 +177,14 @@
 
 - [x] Corrigir loop de redirecionamento entre tela de login e aplicação (resolvido)
 - [x] Corrigir GIFs dos exercícios que não estão sendo exibidos
+
+- [x] Corrigir erro de API retornando HTML em vez de JSON na página /treino/A
+
+## Próximas Funcionalidades a Implementar
+
+- [x] Implementar modo de execução de treino passo a passo
+- [x] Adicionar timer de descanso entre séries
+- [x] Permitir registro de cargas utilizadas durante o treino
+- [x] Criar página de Conquistas (Badges)
+- [x] Implementar lógica de desbloqueio automático de conquistas
+- [x] Adicionar conquistas: 7 dias consecutivos, 50 treinos, etc.
