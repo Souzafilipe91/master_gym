@@ -188,3 +188,9 @@
 - [x] Criar página de Conquistas (Badges)
 - [x] Implementar lógica de desbloqueio automático de conquistas
 - [x] Adicionar conquistas: 7 dias consecutivos, 50 treinos, etc.
+
+## Verificação Multi-Usuário
+
+- [x] Verificar isolamento de dados entre usuários
+- [x] Testar criação de conta e login de novo usuário
+- [x] Documentar como compartilhar o app
