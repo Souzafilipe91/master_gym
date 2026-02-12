@@ -17,11 +17,14 @@ import GerarTreino from "./pages/GerarTreino";
 import MeusTreinos from "./pages/MeusTreinos";
 import ExecutarTreino from "./pages/ExecutarTreino";
 import Conquistas from "./pages/Conquistas";
+import { LockScreenWidgetManager } from "./components/LockScreenWidgetManager";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <Layout>
+    <>
+      <LockScreenWidgetManager />
+      <Layout>
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/biblioteca"} component={Biblioteca} />
@@ -38,7 +41,8 @@ function Router() {
         {/* Final fallback route */}
         <Route component={NotFound} />
       </Switch>
-    </Layout>
+      </Layout>
+    </>
   );
 }
 

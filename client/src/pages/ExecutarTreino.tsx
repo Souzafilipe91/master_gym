@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward } from "lucide-react";
+import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize } from "lucide-react";
 import { Link, useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { ExerciseGifModal } from "@/components/ExerciseGifModal";
+import { useHaptic } from "@/hooks/useHaptic";
+import { useFullscreen } from "@/hooks/useFullscreen";
 
 export default function ExecutarTreino() {
   const params = useParams<{ code: string }>();
@@ -20,6 +22,8 @@ export default function ExecutarTreino() {
   const [exerciseData, setExerciseData] = useState<Record<number, { sets: Array<{ reps: number; load: number }> }>>({});
   const [selectedGif, setSelectedGif] = useState<{ name: string; url: string } | null>(null);
   const [workoutStartTime] = useState(new Date());
+  const haptic = useHaptic();
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
 
   const { data: workoutType } = trpc.workoutTypes.getByCode.useQuery(
     { code: workoutCode || "" },
@@ -59,6 +63,7 @@ export default function ExecutarTreino() {
       return () => clearTimeout(timer);
     } else if (restTimeLeft === 0 && isResting) {
       setIsResting(false);
+      haptic.restEnd(); // Vibração ao fim do descanso
     }
   }, [isResting, restTimeLeft]);
 
@@ -83,14 +88,19 @@ export default function ExecutarTreino() {
     newData[exerciseId].sets[currentSet - 1] = currentSetData;
     setExerciseData(newData);
 
+    // Vibração ao completar série
+    haptic.setComplete();
+
     // Verificar se completou todas as séries do exercício
     if (currentSet >= (currentExercise?.sets || 0)) {
       // Próximo exercício
       if (currentExerciseIndex < (exercisesWithDetails?.length || 0) - 1) {
         setCurrentExerciseIndex(currentExerciseIndex + 1);
         setCurrentSet(1);
+        haptic.success();
       } else {
         // Treino completo!
+        haptic.workoutComplete();
         handleFinishWorkout();
       }
     } else {
@@ -99,6 +109,7 @@ export default function ExecutarTreino() {
       const restSeconds = parseRestTime(currentExercise?.restTime || null);
       setRestTimeLeft(restSeconds);
       setIsResting(true);
+      haptic.restStart();
     }
   };
 
@@ -211,7 +222,21 @@ export default function ExecutarTreino() {
                 Exercício {currentExerciseIndex + 1} de {exercisesWithDetails?.length}
               </p>
             </div>
-            <div className="w-20" />
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                toggleFullscreen();
+                haptic.light();
+              }}
+              className="flex items-center gap-2"
+            >
+              {isFullscreen ? (
+                <Minimize className="w-4 h-4" />
+              ) : (
+                <Maximize className="w-4 h-4" />
+              )}
+            </Button>
           </div>
           {/* Barra de progresso */}
           <div className="mt-4 w-full bg-muted rounded-full h-2">

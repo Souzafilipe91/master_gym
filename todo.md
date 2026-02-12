@@ -200,3 +200,10 @@
 - [x] Corrigir GIFs dos exercícios não carregando (aparecem ícones de interrogação)
 
 - [x] Corrigir erro 404 ao clicar no botão "Iniciar Treino"
+
+## Novas Funcionalidades Solicitadas
+
+- [x] Implementar vibração háptica no mobile (completar série, descanso, conquistas)
+- [x] Adicionar modo fullscreen durante execução de treino
+- [x] Criar widget de progresso semanal no Dashboard
+- [x] Implementar widget para tela bloqueada (Lock Screen Widget)
