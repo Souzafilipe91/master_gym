@@ -127,19 +127,31 @@ export default function TreinoDetalhes() {
               <Card key={exercise.id} className="hover:border-primary/50 transition-all">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
-                    {exercise.gifUrl && (
-                      <div 
-                        className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-                        onClick={() => setSelectedGif({ name: exercise.exerciseName, url: exercise.gifUrl! })}
-                      >
-                        <img
-                          src={exercise.gifUrl}
-                          alt={`Demo: ${exercise.exerciseName}`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                    )}
+                    <div 
+                      className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 cursor-pointer hover:ring-2 hover:ring-primary transition-all flex items-center justify-center"
+                      onClick={() => exercise.gifUrl && setSelectedGif({ name: exercise.exerciseName, url: exercise.gifUrl })}
+                    >
+                      {exercise.gifUrl ? (
+                        <>
+                          <img
+                            src={exercise.gifUrl}
+                            alt={`Demo: ${exercise.exerciseName}`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              // Se o GIF falhar ao carregar, mostrar ícone
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.nextElementSibling) {
+                                (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                              }
+                            }}
+                          />
+                          <Dumbbell className="w-10 h-10 text-primary/40" style={{ display: 'none' }} />
+                        </>
+                      ) : (
+                        <Dumbbell className="w-10 h-10 text-primary/40" />
+                      )}
+                    </div>
                     <div className="flex-1">
                       <CardTitle className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">

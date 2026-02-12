@@ -1,0 +1,35 @@
+{
+  "query": "SELECT id, name, gifUrl FROM exercises WHERE id IN (1,2,3,4,5);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2eJZ6uYkQqqj2tc.root --database EVvjYMQDCpqg6oqAYCDCXo --execute SELECT id, name, gifUrl FROM exercises WHERE id IN (1,2,3,4,5);",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Supino Reto com Halter",
+      "gifUrl": "https://newlife.com.cy/wp-content/uploads/2019/11/00071301-Dumbbell-Bench-Press_Chest_small.gif"
+    },
+    {
+      "id": "2",
+      "name": "Supino Inclinado com Halter",
+      "gifUrl": "https://newlife.com.cy/wp-content/uploads/2019/11/00091301-Dumbbell-Incline-Bench-Press_Chest_small.gif"
+    },
+    {
+      "id": "3",
+      "name": "Voador",
+      "gifUrl": "https://newlife.com.cy/wp-content/uploads/2019/11/01021301-Lever-Pec-Deck-Fly_Chest_small.gif"
+    },
+    {
+      "id": "4",
+      "name": "Chest Press",
+      "gifUrl": "https://newlife.com.cy/wp-content/uploads/2019/11/01011301-Lever-Chest-Press_Chest_small.gif"
+    },
+    {
+      "id": "5",
+      "name": "Crucifixo com Halteres",
+      "gifUrl": "https://newlife.com.cy/wp-content/uploads/2019/11/00101301-Dumbbell-Fly_Chest_small.gif"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tgifUrl\n1\tSupino Reto com Halter\thttps://newlife.com.cy/wp-content/uploads/2019/11/00071301-Dumbbell-Bench-Press_Chest_small.gif\n2\tSupino Inclinado com Halter\thttps://newlife.com.cy/wp-content/uploads/2019/11/00091301-Dumbbell-Incline-Bench-Press_Chest_small.gif\n3\tVoador\thttps://newlife.com.cy/wp-content/uploads/2019/11/01021301-Lever-Pec-Deck-Fly_Chest_small.gif\n4\tChest Press\thttps://newlife.com.cy/wp-content/uploads/2019/11/01011301-Lever-Chest-Press_Chest_small.gif\n5\tCrucifixo com Halteres\thttps://newlife.com.cy/wp-content/uploads/2019/11/00101301-Dumbbell-Fly_Chest_small.gif\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

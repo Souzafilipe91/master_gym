@@ -194,3 +194,7 @@
 - [x] Verificar isolamento de dados entre usuários
 - [x] Testar criação de conta e login de novo usuário
 - [x] Documentar como compartilhar o app
+
+## Bug Reportado
+
+- [x] Corrigir GIFs dos exercícios não carregando (aparecem ícones de interrogação)

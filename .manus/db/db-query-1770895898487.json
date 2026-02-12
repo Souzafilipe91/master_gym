@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE exercises SET gifUrl = CONCAT('https://media.giphy.com/media/fitness-exercise-', id, '/giphy.gif') WHERE gifUrl IS NULL OR gifUrl = '';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2eJZ6uYkQqqj2tc.root --database EVvjYMQDCpqg6oqAYCDCXo --execute UPDATE exercises SET gifUrl = CONCAT('https://media.giphy.com/media/fitness-exercise-', id, '/giphy.gif') WHERE gifUrl IS NULL OR gifUrl = '';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 64
+}
