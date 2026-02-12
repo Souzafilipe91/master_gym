@@ -213,3 +213,15 @@
 - [x] Adicionar botão de pular exercício
 - [x] Criar modal/drawer com lista completa de exercícios do treino
 - [x] Permitir navegação livre entre exercícios (saltar para qualquer um)
+
+## Nova Funcionalidade - Encerrar Treino Antecipadamente
+
+- [x] Adicionar botão de encerrar treino antecipadamente
+- [x] Implementar confirmação antes de encerrar
+- [x] Salvar treino parcial como completo no histórico
+
+## Persistência de Treino em Andamento
+
+- [x] Salvar estado do treino em localStorage automaticamente
+- [x] Restaurar estado ao voltar para página de execução
+- [x] Limpar estado salvo ao encerrar ou finalizar treino

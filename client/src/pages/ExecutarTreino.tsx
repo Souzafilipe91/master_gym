@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize, List, ChevronRight } from "lucide-react";
+import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize, List, ChevronRight, X } from "lucide-react";
 import { Link, useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { ExerciseGifModal } from "@/components/ExerciseGifModal";
@@ -24,6 +24,7 @@ export default function ExecutarTreino() {
   const [selectedGif, setSelectedGif] = useState<{ name: string; url: string } | null>(null);
   const [workoutStartTime] = useState(new Date());
   const [showExerciseList, setShowExerciseList] = useState(false);
+  const [showEndWorkoutDialog, setShowEndWorkoutDialog] = useState(false);
   const haptic = useHaptic();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -55,6 +56,40 @@ export default function ExecutarTreino() {
   });
 
   const currentExercise = exercisesWithDetails?.[currentExerciseIndex];
+
+  // Chave do localStorage para este treino
+  const storageKey = `workout-progress-${workoutCode}`;
+
+  // Restaurar estado salvo ao montar componente
+  useEffect(() => {
+    if (!workoutCode) return;
+    
+    const savedState = localStorage.getItem(storageKey);
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        setCurrentExerciseIndex(parsed.currentExerciseIndex || 0);
+        setCurrentSet(parsed.currentSet || 1);
+        setExerciseData(parsed.exerciseData || {});
+      } catch (error) {
+        console.error('Erro ao restaurar estado do treino:', error);
+      }
+    }
+  }, [workoutCode]);
+
+  // Salvar estado automaticamente quando mudar
+  useEffect(() => {
+    if (!workoutCode) return;
+    
+    const state = {
+      currentExerciseIndex,
+      currentSet,
+      exerciseData,
+      timestamp: new Date().toISOString(),
+    };
+    
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  }, [currentExerciseIndex, currentSet, exerciseData, workoutCode, storageKey]);
 
   // Timer de descanso
   useEffect(() => {
@@ -152,6 +187,11 @@ export default function ExecutarTreino() {
     setShowExerciseList(false);
   };
 
+  const handleEndWorkoutEarly = async () => {
+    setShowEndWorkoutDialog(false);
+    await handleFinishWorkout();
+  };
+
   const handleFinishWorkout = async () => {
     if (!currentCycle || !workoutType) return;
 
@@ -183,6 +223,9 @@ export default function ExecutarTreino() {
         }
       }
 
+      // Limpar estado salvo do localStorage
+      localStorage.removeItem(storageKey);
+      
       // Redirecionar para histórico
       setLocation("/historico");
     } catch (error) {
@@ -413,6 +456,20 @@ export default function ExecutarTreino() {
                 <SkipForward className="w-5 h-5 mr-2" />
                 Pular Exercício
               </Button>
+              
+              {/* Botão de Encerrar Treino Antecipadamente */}
+              <Button 
+                size="lg" 
+                variant="destructive"
+                className="w-full"
+                onClick={() => {
+                  setShowEndWorkoutDialog(true);
+                  haptic.light();
+                }}
+              >
+                <X className="w-5 h-5 mr-2" />
+                Encerrar Treino
+              </Button>
             </div>
           </>
         )}
@@ -489,6 +546,44 @@ export default function ExecutarTreino() {
                 </button>
               );
             })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Confirmação de Encerramento Antecipado */}
+      <Dialog open={showEndWorkoutDialog} onOpenChange={setShowEndWorkoutDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Encerrar Treino Antecipadamente?</DialogTitle>
+            <DialogDescription>
+              Você completou apenas {currentExerciseIndex} de {exercisesWithDetails?.length} exercícios.
+              <br /><br />
+              O treino será salvo como <strong>completo</strong> e contará como um dia de treino realizado.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col gap-3 mt-4">
+            <Button 
+              size="lg" 
+              variant="destructive"
+              onClick={handleEndWorkoutEarly}
+              className="w-full"
+            >
+              <Check className="w-5 h-5 mr-2" />
+              Sim, Encerrar e Salvar
+            </Button>
+            
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={() => {
+                setShowEndWorkoutDialog(false);
+                haptic.light();
+              }}
+              className="w-full"
+            >
+              Continuar Treinando
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
