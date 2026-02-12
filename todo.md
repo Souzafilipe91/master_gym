@@ -207,3 +207,9 @@
 - [x] Adicionar modo fullscreen durante execução de treino
 - [x] Criar widget de progresso semanal no Dashboard
 - [x] Implementar widget para tela bloqueada (Lock Screen Widget)
+
+## Novas Funcionalidades - Flexibilidade no Treino
+
+- [x] Adicionar botão de pular exercício
+- [x] Criar modal/drawer com lista completa de exercícios do treino
+- [x] Permitir navegação livre entre exercícios (saltar para qualquer um)

@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize } from "lucide-react";
+import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize, List, ChevronRight } from "lucide-react";
 import { Link, useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { ExerciseGifModal } from "@/components/ExerciseGifModal";
@@ -22,6 +23,7 @@ export default function ExecutarTreino() {
   const [exerciseData, setExerciseData] = useState<Record<number, { sets: Array<{ reps: number; load: number }> }>>({});
   const [selectedGif, setSelectedGif] = useState<{ name: string; url: string } | null>(null);
   const [workoutStartTime] = useState(new Date());
+  const [showExerciseList, setShowExerciseList] = useState(false);
   const haptic = useHaptic();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -116,6 +118,38 @@ export default function ExecutarTreino() {
   const handleSkipRest = () => {
     setIsResting(false);
     setRestTimeLeft(0);
+  };
+
+  const handleSkipExercise = () => {
+    haptic.medium();
+    
+    // Cancelar descanso se estiver ativo
+    setIsResting(false);
+    setRestTimeLeft(0);
+    
+    // Ir para próximo exercício
+    if (currentExerciseIndex < (exercisesWithDetails?.length || 0) - 1) {
+      setCurrentExerciseIndex(currentExerciseIndex + 1);
+      setCurrentSet(1);
+    } else {
+      // Se for o último, finalizar treino
+      handleFinishWorkout();
+    }
+  };
+
+  const handleJumpToExercise = (index: number) => {
+    haptic.light();
+    
+    // Cancelar descanso se estiver ativo
+    setIsResting(false);
+    setRestTimeLeft(0);
+    
+    // Navegar para o exercício selecionado
+    setCurrentExerciseIndex(index);
+    setCurrentSet(1);
+    
+    // Fechar modal
+    setShowExerciseList(false);
   };
 
   const handleFinishWorkout = async () => {
@@ -222,21 +256,34 @@ export default function ExecutarTreino() {
                 Exercício {currentExerciseIndex + 1} de {exercisesWithDetails?.length}
               </p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => {
-                toggleFullscreen();
-                haptic.light();
-              }}
-              className="flex items-center gap-2"
-            >
-              {isFullscreen ? (
-                <Minimize className="w-4 h-4" />
-              ) : (
-                <Maximize className="w-4 h-4" />
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  setShowExerciseList(true);
+                  haptic.light();
+                }}
+                title="Ver todos os exercícios"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  toggleFullscreen();
+                  haptic.light();
+                }}
+                title="Tela cheia"
+              >
+                {isFullscreen ? (
+                  <Minimize className="w-4 h-4" />
+                ) : (
+                  <Maximize className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
           {/* Barra de progresso */}
           <div className="mt-4 w-full bg-muted rounded-full h-2">
@@ -341,19 +388,32 @@ export default function ExecutarTreino() {
               </CardContent>
             </Card>
 
-            {/* Botão de Completar Série */}
-            <Button 
-              size="lg" 
-              className="w-full"
-              onClick={handleCompleteSet}
-            >
-              <Check className="w-5 h-5 mr-2" />
-              {currentSet >= currentExercise.sets && currentExerciseIndex >= (exercisesWithDetails?.length || 0) - 1
-                ? "Finalizar Treino"
-                : currentSet >= currentExercise.sets
-                ? "Próximo Exercício"
-                : "Completar Série"}
-            </Button>
+            {/* Botões de Ação */}
+            <div className="space-y-3">
+              <Button 
+                size="lg" 
+                className="w-full"
+                onClick={handleCompleteSet}
+              >
+                <Check className="w-5 h-5 mr-2" />
+                {currentSet >= currentExercise.sets && currentExerciseIndex >= (exercisesWithDetails?.length || 0) - 1
+                  ? "Finalizar Treino"
+                  : currentSet >= currentExercise.sets
+                  ? "Próximo Exercício"
+                  : "Completar Série"}
+              </Button>
+              
+              {/* Botão de Pular Exercício */}
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="w-full"
+                onClick={handleSkipExercise}
+              >
+                <SkipForward className="w-5 h-5 mr-2" />
+                Pular Exercício
+              </Button>
+            </div>
           </>
         )}
       </main>
@@ -367,6 +427,71 @@ export default function ExecutarTreino() {
           gifUrl={selectedGif.url}
         />
       )}
+
+      {/* Modal de Lista de Exercícios */}
+      <Dialog open={showExerciseList} onOpenChange={setShowExerciseList}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Exercícios do Treino {workoutCode}</DialogTitle>
+            <DialogDescription>
+              Selecione um exercício para ir diretamente para ele
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2 mt-4">
+            {exercisesWithDetails?.map((exercise, index) => {
+              const isCurrentExercise = index === currentExerciseIndex;
+              const exerciseCompleted = index < currentExerciseIndex;
+              
+              return (
+                <button
+                  key={exercise.exerciseId}
+                  onClick={() => handleJumpToExercise(index)}
+                  className={`
+                    w-full p-4 rounded-lg border-2 text-left transition-all
+                    hover:border-primary/50 hover:bg-accent/50
+                    ${
+                      isCurrentExercise
+                        ? 'border-primary bg-primary/10'
+                        : exerciseCompleted
+                        ? 'border-green-500/30 bg-green-500/5'
+                        : 'border-border'
+                    }
+                  `}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-semibold text-muted-foreground">
+                          {index + 1}
+                        </span>
+                        <h3 className="font-semibold">{exercise.exerciseName}</h3>
+                        {isCurrentExercise && (
+                          <Badge variant="default" className="ml-2">Atual</Badge>
+                        )}
+                        {exerciseCompleted && (
+                          <Badge variant="outline" className="ml-2 border-green-500 text-green-500">
+                            <Check className="w-3 h-3 mr-1" />
+                            Completo
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>{exercise.sets} séries</span>
+                        <span>•</span>
+                        <span>{exercise.reps} repetições</span>
+                        <span>•</span>
+                        <span>{exercise.restTime || '90s'}</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
