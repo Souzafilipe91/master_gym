@@ -1,5 +1,5 @@
-const CACHE_NAME = 'filipe-treinos-v1';
-const DATA_CACHE_NAME = 'filipe-treinos-data-v1';
+const CACHE_NAME = 'filipe-treinos-v2';
+const DATA_CACHE_NAME = 'filipe-treinos-data-v2';
 
 const urlsToCache = [
   '/',
@@ -108,7 +108,7 @@ self.addEventListener('fetch', (event) => {
 
             const responseToCache = response.clone();
 
-            if (event.request.method === 'GET') {
+            if (event.request.method === 'GET' && !url.pathname.includes('/api/')) {
               caches.open(CACHE_NAME).then((cache) => {
                 cache.put(event.request, responseToCache);
               });
@@ -116,6 +116,12 @@ self.addEventListener('fetch', (event) => {
 
             return response;
           }).catch(() => {
+            // For navigation requests, serve the index.html from cache (SPA fallback)
+            if (event.request.mode === 'navigate') {
+              return caches.match('/').then(response => {
+                return response || new Response('Offline', { status: 503 });
+              });
+            }
             return caches.match('/');
           });
         })

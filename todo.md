@@ -198,3 +198,5 @@
 ## Bug Reportado
 
 - [x] Corrigir GIFs dos exercícios não carregando (aparecem ícones de interrogação)
+
+- [x] Corrigir erro 404 ao clicar no botão "Iniciar Treino"
