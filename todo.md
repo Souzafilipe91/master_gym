@@ -225,3 +225,7 @@
 - [x] Salvar estado do treino em localStorage automaticamente
 - [x] Restaurar estado ao voltar para página de execução
 - [x] Limpar estado salvo ao encerrar ou finalizar treino
+
+## Bug Reportado
+
+- [x] Botões de "Pular Exercício" e "Encerrar Treino" não aparecem na tela mobile

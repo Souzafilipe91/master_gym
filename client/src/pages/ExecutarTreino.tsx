@@ -282,7 +282,7 @@ export default function ExecutarTreino() {
   const progress = ((currentExerciseIndex * 100) + ((currentSet / (currentExercise.sets || 1)) * 100)) / (exercisesWithDetails?.length || 1);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-32">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container py-4">
