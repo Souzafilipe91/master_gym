@@ -1,0 +1,194 @@
+{
+  "query": "SELECT id, name FROM exercises ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2eJZ6uYkQqqj2tc.root --database EVvjYMQDCpqg6oqAYCDCXo --execute SELECT id, name FROM exercises ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Supino Reto com Halter"
+    },
+    {
+      "id": "2",
+      "name": "Supino Inclinado com Halter"
+    },
+    {
+      "id": "3",
+      "name": "Voador"
+    },
+    {
+      "id": "4",
+      "name": "Chest Press"
+    },
+    {
+      "id": "5",
+      "name": "Crucifixo com Halteres"
+    },
+    {
+      "id": "6",
+      "name": "Cross Over Polia Alta"
+    },
+    {
+      "id": "7",
+      "name": "Crucifixo Inclinado"
+    },
+    {
+      "id": "8",
+      "name": "Puxador Costas Frente Pegada Aberta"
+    },
+    {
+      "id": "9",
+      "name": "Puxador Costas Frente Triângulo"
+    },
+    {
+      "id": "10",
+      "name": "Remada Articulada Pronada"
+    },
+    {
+      "id": "11",
+      "name": "Remada Baixa Triângulo"
+    },
+    {
+      "id": "12",
+      "name": "Crucifixo Inverso na Máquina"
+    },
+    {
+      "id": "13",
+      "name": "Barra Fixa"
+    },
+    {
+      "id": "14",
+      "name": "Remada Curvada"
+    },
+    {
+      "id": "15",
+      "name": "Agachamento Hack"
+    },
+    {
+      "id": "16",
+      "name": "Leg Press 45°"
+    },
+    {
+      "id": "17",
+      "name": "Cadeira Extensora"
+    },
+    {
+      "id": "18",
+      "name": "Mesa Flexora"
+    },
+    {
+      "id": "19",
+      "name": "Cadeira Flexora"
+    },
+    {
+      "id": "20",
+      "name": "Cadeira Abdutora"
+    },
+    {
+      "id": "21",
+      "name": "Leg Press Unilateral"
+    },
+    {
+      "id": "22",
+      "name": "Agachamento Livre"
+    },
+    {
+      "id": "23",
+      "name": "Desenvolvimento Máquina Simultâneo"
+    },
+    {
+      "id": "24",
+      "name": "Desenvolvimento Arnold"
+    },
+    {
+      "id": "25",
+      "name": "Elevação Lateral"
+    },
+    {
+      "id": "26",
+      "name": "Elevação Lateral Unilateral no Cross"
+    },
+    {
+      "id": "27",
+      "name": "Desenvolvimento com Halteres"
+    },
+    {
+      "id": "28",
+      "name": "Elevação Frontal"
+    },
+    {
+      "id": "29",
+      "name": "Rosca Alternada com Rotação"
+    },
+    {
+      "id": "30",
+      "name": "Rosca Direta Cross"
+    },
+    {
+      "id": "31",
+      "name": "Rosca Martelo"
+    },
+    {
+      "id": "32",
+      "name": "Rosca Direta Barra Reta"
+    },
+    {
+      "id": "33",
+      "name": "Rosca Concentrada"
+    },
+    {
+      "id": "34",
+      "name": "Tríceps Pulley Barra Reta"
+    },
+    {
+      "id": "35",
+      "name": "Tríceps Francês Corda no Cross"
+    },
+    {
+      "id": "36",
+      "name": "Tríceps Testa com Halter"
+    },
+    {
+      "id": "37",
+      "name": "Tríceps Coice"
+    },
+    {
+      "id": "38",
+      "name": "Mergulho"
+    },
+    {
+      "id": "39",
+      "name": "Abdômen no Solo"
+    },
+    {
+      "id": "40",
+      "name": "Abdominal Declinado"
+    },
+    {
+      "id": "41",
+      "name": "Abdominal Infra"
+    },
+    {
+      "id": "42",
+      "name": "Prancha"
+    },
+    {
+      "id": "43",
+      "name": "Encolhimento com Halter"
+    },
+    {
+      "id": "44",
+      "name": "Encolhimento na Máquina"
+    },
+    {
+      "id": "45",
+      "name": "Panturrilha Sentado"
+    },
+    {
+      "id": "46",
+      "name": "Panturrilha em Pé"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n1\tSupino Reto com Halter\n2\tSupino Inclinado com Halter\n3\tVoador\n4\tChest Press\n5\tCrucifixo com Halteres\n6\tCross Over Polia Alta\n7\tCrucifixo Inclinado\n8\tPuxador Costas Frente Pegada Aberta\n9\tPuxador Costas Frente Triângulo\n10\tRemada Articulada Pronada\n11\tRemada Baixa Triângulo\n12\tCrucifixo Inverso na Máquina\n13\tBarra Fixa\n14\tRemada Curvada\n15\tAgachamento Hack\n16\tLeg Press 45°\n17\tCadeira Extensora\n18\tMesa Flexora\n19\tCadeira Flexora\n20\tCadeira Abdutora\n21\tLeg Press Unilateral\n22\tAgachamento Livre\n23\tDesenvolvimento Máquina Simultâneo\n24\tDesenvolvimento Arnold\n25\tElevação Lateral\n26\tElevação Lateral Unilateral no Cross\n27\tDesenvolvimento com Halteres\n28\tElevação Frontal\n29\tRosca Alternada com Rotação\n30\tRosca Direta Cross\n31\tRosca Martelo\n32\tRosca Direta Barra Reta\n33\tRosca Concentrada\n34\tTríceps Pulley Barra Reta\n35\tTríceps Francês Corda no Cross\n36\tTríceps Testa com Halter\n37\tTríceps Coice\n38\tMergulho\n39\tAbdômen no Solo\n40\tAbdominal Declinado\n41\tAbdominal Infra\n42\tPrancha\n43\tEncolhimento com Halter\n44\tEncolhimento na Máquina\n45\tPanturrilha Sentado\n46\tPanturrilha em Pé\n",
+  "stderr": "",
+  "execution_time_ms": 177
+}

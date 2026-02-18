@@ -1,5 +1,5 @@
-const CACHE_NAME = 'filipe-treinos-v2';
-const DATA_CACHE_NAME = 'filipe-treinos-data-v2';
+const CACHE_NAME = 'filipe-treinos-v3';
+const DATA_CACHE_NAME = 'filipe-treinos-data-v3';
 
 const urlsToCache = [
   '/',

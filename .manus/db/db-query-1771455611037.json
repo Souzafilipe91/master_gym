@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, name FROM exercises ORDER BY id LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2eJZ6uYkQqqj2tc.root --database EVvjYMQDCpqg6oqAYCDCXo --execute SELECT id, name FROM exercises ORDER BY id LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Supino Reto com Halter"
+    },
+    {
+      "id": "2",
+      "name": "Supino Inclinado com Halter"
+    },
+    {
+      "id": "3",
+      "name": "Voador"
+    },
+    {
+      "id": "4",
+      "name": "Chest Press"
+    },
+    {
+      "id": "5",
+      "name": "Crucifixo com Halteres"
+    },
+    {
+      "id": "6",
+      "name": "Cross Over Polia Alta"
+    },
+    {
+      "id": "7",
+      "name": "Crucifixo Inclinado"
+    },
+    {
+      "id": "8",
+      "name": "Puxador Costas Frente Pegada Aberta"
+    },
+    {
+      "id": "9",
+      "name": "Puxador Costas Frente Triângulo"
+    },
+    {
+      "id": "10",
+      "name": "Remada Articulada Pronada"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n1\tSupino Reto com Halter\n2\tSupino Inclinado com Halter\n3\tVoador\n4\tChest Press\n5\tCrucifixo com Halteres\n6\tCross Over Polia Alta\n7\tCrucifixo Inclinado\n8\tPuxador Costas Frente Pegada Aberta\n9\tPuxador Costas Frente Triângulo\n10\tRemada Articulada Pronada\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

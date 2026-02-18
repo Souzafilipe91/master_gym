@@ -229,3 +229,11 @@
 ## Bug Reportado
 
 - [x] Botões de "Pular Exercício" e "Encerrar Treino" não aparecem na tela mobile
+
+## Correções Solicitadas
+
+- [x] Corrigir ícone do app que sumiu
+- [ ] Gerar ilustrações com IA para 46 exercícios (10/46 completas)
+- [ ] Fazer upload das ilustrações para S3 (10/46 completas)
+- [ ] Atualizar banco de dados com URLs das ilustrações (10/46 completas)
+- [ ] Garantir que GIFs funcionem offline
