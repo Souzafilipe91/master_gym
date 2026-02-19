@@ -180,7 +180,12 @@ export async function createWorkoutLog(data: typeof workoutLogs.$inferInsert) {
   
   // Verificar conquistas após criar log de treino
   if (data.userId) {
-    await checkAndUnlockAchievements(data.userId);
+    try {
+      await checkAndUnlockAchievements(data.userId);
+    } catch (error) {
+      console.error('Erro ao verificar conquistas:', error);
+      // Não bloquear o salvamento do treino se houver erro nas conquistas
+    }
   }
   
   return result;

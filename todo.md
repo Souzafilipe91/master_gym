@@ -237,3 +237,7 @@
 - [ ] Fazer upload das ilustrações para S3 (10/46 completas)
 - [ ] Atualizar banco de dados com URLs das ilustrações (10/46 completas)
 - [ ] Garantir que GIFs funcionem offline
+
+## Bug Crítico Reportado
+
+- [x] Corrigir erro de query na tabela user_achievements ao salvar treino
