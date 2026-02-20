@@ -241,3 +241,9 @@
 ## Bug Crítico Reportado
 
 - [x] Corrigir erro de query na tabela user_achievements ao salvar treino
+
+## Remover Funcionalidade de GIFs
+
+- [x] Remover campo gifUrl do schema de exercises
+- [x] Atualizar componentes para usar apenas placeholders
+- [x] Limpar código e arquivos relacionados a GIFs

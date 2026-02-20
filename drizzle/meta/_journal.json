@@ -43,6 +43,13 @@
       "when": 1769478471466,
       "tag": "0005_early_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1771609334000,
+      "tag": "0006_brainy_mentor",
+      "breakpoints": true
     }
   ]
 }

@@ -7,7 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize, List, ChevronRight, X } from "lucide-react";
 import { Link, useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
-import { ExerciseGifModal } from "@/components/ExerciseGifModal";
+
 import { useHaptic } from "@/hooks/useHaptic";
 import { useFullscreen } from "@/hooks/useFullscreen";
 
@@ -21,7 +21,7 @@ export default function ExecutarTreino() {
   const [isResting, setIsResting] = useState(false);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const [exerciseData, setExerciseData] = useState<Record<number, { sets: Array<{ reps: number; load: number }> }>>({});
-  const [selectedGif, setSelectedGif] = useState<{ name: string; url: string } | null>(null);
+
   const [workoutStartTime] = useState(new Date());
   const [showExerciseList, setShowExerciseList] = useState(false);
   const [showEndWorkoutDialog, setShowEndWorkoutDialog] = useState(false);
@@ -51,7 +51,6 @@ export default function ExecutarTreino() {
     return {
       ...we,
       exerciseName: exercise?.name || "Exercício",
-      gifUrl: exercise?.gifUrl,
     };
   });
 
@@ -361,19 +360,6 @@ export default function ExecutarTreino() {
             <Card className="mb-6">
               <CardHeader>
                 <div className="flex items-start gap-4">
-                  {currentExercise.gifUrl && (
-                    <div 
-                      className="flex-shrink-0 w-32 h-32 rounded-lg overflow-hidden bg-muted cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-                      onClick={() => setSelectedGif({ name: currentExercise.exerciseName, url: currentExercise.gifUrl! })}
-                    >
-                      <img
-                        src={currentExercise.gifUrl}
-                        alt={`Demo: ${currentExercise.exerciseName}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                  )}
                   <div className="flex-1">
                     <CardTitle className="text-2xl mb-2">{currentExercise.exerciseName}</CardTitle>
                     <CardDescription>
@@ -476,14 +462,7 @@ export default function ExecutarTreino() {
       </main>
 
       {/* Modal de GIF */}
-      {selectedGif && (
-        <ExerciseGifModal
-          open={!!selectedGif}
-          onOpenChange={(open) => !open && setSelectedGif(null)}
-          exerciseName={selectedGif.name}
-          gifUrl={selectedGif.url}
-        />
-      )}
+
 
       {/* Modal de Lista de Exercícios */}
       <Dialog open={showExerciseList} onOpenChange={setShowExerciseList}>

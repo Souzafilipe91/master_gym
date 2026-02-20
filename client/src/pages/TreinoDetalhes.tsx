@@ -6,13 +6,13 @@ import { ArrowLeft, Dumbbell, Clock, TrendingUp, Info } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { useState } from "react";
 import { EditLoadDialog } from "@/components/EditLoadDialog";
-import { ExerciseGifModal } from "@/components/ExerciseGifModal";
+
 
 export default function TreinoDetalhes() {
   const params = useParams<{ code: string }>();
   const workoutCode = params.code?.toUpperCase();
   const [customLoads, setCustomLoads] = useState<Record<number, number>>({});
-  const [selectedGif, setSelectedGif] = useState<{ name: string; url: string } | null>(null);
+
 
   const { data: workoutType } = trpc.workoutTypes.getByCode.useQuery(
     { code: workoutCode || "" },
@@ -35,7 +35,6 @@ export default function TreinoDetalhes() {
     return {
       ...we,
       exerciseName: exercise?.name || "Exercício",
-      gifUrl: exercise?.gifUrl,
     };
   });
 
@@ -129,12 +128,12 @@ export default function TreinoDetalhes() {
                   <div className="flex items-start justify-between gap-4">
                     <div 
                       className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 cursor-pointer hover:ring-2 hover:ring-primary transition-all flex items-center justify-center"
-                      onClick={() => exercise.gifUrl && setSelectedGif({ name: exercise.exerciseName, url: exercise.gifUrl })}
+                      onClick={() => {/* Placeholder - sem GIF */}}
                     >
-                      {exercise.gifUrl ? (
+                      {false ? (
                         <>
                           <img
-                            src={exercise.gifUrl}
+                            src=""
                             alt={`Demo: ${exercise.exerciseName}`}
                             className="w-full h-full object-cover"
                             loading="lazy"
@@ -227,14 +226,7 @@ export default function TreinoDetalhes() {
       </main>
 
       {/* Modal de GIF */}
-      {selectedGif && (
-        <ExerciseGifModal
-          open={!!selectedGif}
-          onOpenChange={(open) => !open && setSelectedGif(null)}
-          exerciseName={selectedGif.name}
-          gifUrl={selectedGif.url}
-        />
-      )}
+
     </div>
   );
 }
