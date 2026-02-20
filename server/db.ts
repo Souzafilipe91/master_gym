@@ -211,6 +211,29 @@ export async function createExerciseLog(data: typeof exerciseLogs.$inferInsert) 
   return result;
 }
 
+export async function getLastExerciseLog(userId: number, exerciseId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const logs = await db
+    .select({
+      reps: exerciseLogs.reps,
+      load: exerciseLogs.load,
+      workoutDate: workoutLogs.workoutDate,
+    })
+    .from(exerciseLogs)
+    .innerJoin(workoutLogs, eq(exerciseLogs.workoutLogId, workoutLogs.id))
+    .where(and(
+      eq(workoutLogs.userId, userId),
+      eq(exerciseLogs.exerciseId, exerciseId),
+      eq(workoutLogs.completed, true)
+    ))
+    .orderBy(desc(workoutLogs.workoutDate))
+    .limit(1);
+  
+  return logs[0] || null;
+}
+
 // Weight Logs
 export async function getUserWeightLogs(userId: number, limit?: number) {
   const db = await getDb();

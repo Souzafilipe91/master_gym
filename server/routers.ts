@@ -133,6 +133,11 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getExerciseLogsByWorkoutLog(input.workoutLogId);
       }),
+    getLastLog: protectedProcedure
+      .input(z.object({ exerciseId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        return await db.getLastExerciseLog(ctx.user.id, input.exerciseId);
+      }),
     create: protectedProcedure
       .input(z.object({
         workoutLogId: z.number(),

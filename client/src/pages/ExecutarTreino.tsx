@@ -55,6 +55,12 @@ export default function ExecutarTreino() {
   });
 
   const currentExercise = exercisesWithDetails?.[currentExerciseIndex];
+  
+  // Buscar último log do exercício atual
+  const { data: lastLog } = trpc.exerciseLogs.getLastLog.useQuery(
+    { exerciseId: currentExercise?.exerciseId || 0 },
+    { enabled: !!currentExercise?.exerciseId }
+  );
 
   // Chave do localStorage para este treino
   const storageKey = `workout-progress-${workoutCode}`;
@@ -379,6 +385,29 @@ export default function ExecutarTreino() {
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="text-lg">Registrar Série {currentSet}</CardTitle>
+                {/* Indicador visual de progresso */}
+                <div className="flex gap-2 mt-3">
+                  {Array.from({ length: currentExercise.sets }, (_, i) => {
+                    const setNumber = i + 1;
+                    const isCompleted = exerciseData[currentExercise.exerciseId]?.sets[i];
+                    const isCurrent = setNumber === currentSet;
+                    
+                    return (
+                      <div
+                        key={i}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
+                          isCompleted
+                            ? 'bg-primary text-primary-foreground'
+                            : isCurrent
+                            ? 'bg-primary/20 text-primary border-2 border-primary'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {isCompleted ? <Check className="w-4 h-4" /> : setNumber}
+                      </div>
+                    );
+                  })}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
@@ -393,13 +422,33 @@ export default function ExecutarTreino() {
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Carga (kg)</label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      value={currentSetData.load}
-                      onChange={(e) => updateCurrentSetData('load', parseFloat(e.target.value) || 0)}
-                      className="text-lg font-semibold text-center"
-                    />
+                    <div className="flex gap-2 items-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateCurrentSetData('load', Math.max(0, currentSetData.load - 2.5))}
+                        className="shrink-0"
+                      >
+                        -2.5
+                      </Button>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        value={currentSetData.load}
+                        onChange={(e) => updateCurrentSetData('load', parseFloat(e.target.value) || 0)}
+                        className="text-lg font-semibold text-center"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => updateCurrentSetData('load', currentSetData.load + 2.5)}
+                        className="shrink-0"
+                      >
+                        +2.5
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
@@ -414,6 +463,17 @@ export default function ExecutarTreino() {
                     </p>
                   )}
                 </div>
+                
+                {lastLog && (
+                  <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                    <p className="text-sm font-medium text-primary">
+                      Última vez: {lastLog.reps} reps com {lastLog.load}kg
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(lastLog.workoutDate).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

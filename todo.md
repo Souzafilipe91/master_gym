@@ -247,3 +247,9 @@
 - [x] Remover campo gifUrl do schema de exercises
 - [x] Atualizar componentes para usar apenas placeholders
 - [x] Limpar código e arquivos relacionados a GIFs
+
+## Melhorias de UX Solicitadas
+
+- [x] Adicionar histórico de última execução inline durante treino
+- [x] Implementar botões de ajuste rápido de carga (+2.5kg/-2.5kg)
+- [x] Criar indicador visual de progresso por exercício com círculos
