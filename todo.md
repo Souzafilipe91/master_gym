@@ -253,3 +253,10 @@
 - [x] Adicionar histórico de última execução inline durante treino
 - [x] Implementar botões de ajuste rápido de carga (+2.5kg/-2.5kg)
 - [x] Criar indicador visual de progresso por exercício com círculos
+
+## Novas Funcionalidades Solicitadas
+
+- [x] Criar página de gráficos de evolução de carga por exercício
+- [x] Implementar calculadora de 1RM (1 Repetição Máxima)
+- [x] Integrar calculadora no fluxo de treino
+- [x] Adicionar link de Evolução no menu principal

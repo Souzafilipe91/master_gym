@@ -151,6 +151,14 @@ export default function Home() {
                 </CardHeader>
               </Card>
             </Link>
+            <Link href="/evolucao">
+              <Card className="hover:border-primary/50 transition-all cursor-pointer">
+                <CardHeader>
+                  <CardTitle>Evolução</CardTitle>
+                  <CardDescription>Gráficos de progressão de carga</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
             <Link href="/progresso">
               <Card className="hover:border-primary/50 transition-all cursor-pointer">
                 <CardHeader>

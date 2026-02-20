@@ -11,7 +11,9 @@ import {
   Menu,
   X,
   LogOut,
-  Trophy
+  Trophy,
+  LineChart,
+  Calculator
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -52,6 +54,16 @@ const menuItems = [
     title: "Progresso",
     href: "/progresso",
     icon: TrendingUp,
+  },
+  {
+    title: "Evolução de Carga",
+    href: "/evolucao",
+    icon: LineChart,
+  },
+  {
+    title: "Calculadora 1RM",
+    href: "/calculadora-1rm",
+    icon: Calculator,
   },
   {
     title: "Histórico",

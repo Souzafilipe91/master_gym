@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize, List, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize, List, ChevronRight, X, Calculator } from "lucide-react";
 import { Link, useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 
@@ -303,8 +303,7 @@ export default function ExecutarTreino() {
               <p className="text-xs text-muted-foreground">
                 Exercício {currentExerciseIndex + 1} de {exercisesWithDetails?.length}
               </p>
-            </div>
-            <div className="flex items-center gap-2">
+            </div>            <div className="flex items-center gap-2">
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -312,9 +311,17 @@ export default function ExecutarTreino() {
                   setShowExerciseList(true);
                   haptic.light();
                 }}
-                title="Ver todos os exercícios"
               >
                 <List className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                asChild
+              >
+                <Link href="/calculadora-1rm" target="_blank">
+                  <Calculator className="w-4 h-4" />
+                </Link>
               </Button>
               <Button 
                 variant="ghost" 
