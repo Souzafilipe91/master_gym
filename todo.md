@@ -267,3 +267,14 @@
 - [x] Iniciar pesos dos exercícios em 0 (usuário digita a carga atual a cada treino)
 - [x] Adicionar configuração de tempo de descanso nas configurações gerais (válido para todos os treinos)
 - [x] Notificação push quando descanso termina e tela está bloqueada
+
+## Melhorias Adicionais (Mar 2026 - v2)
+
+- [x] Mostrar tempo de descanso ativo na tela do treino (configuração pessoal vs programa)
+- [x] Histórico de cargas inline: mostrar últimos 3 valores ao editar peso
+- [x] Alerta de PR: detectar e celebrar quando supera peso máximo registrado
+- [x] Aba "Personalização" no menu com seletor de tema
+- [x] Tema pré-definido: Branco e Azul Claro
+- [x] Tema pré-definido: Preto e Vermelho (atual)
+- [x] Tema pré-definido: Roxo e Verde (EVA Unit 1)
+- [x] Personalização completa: seletor de cor com círculo cromático

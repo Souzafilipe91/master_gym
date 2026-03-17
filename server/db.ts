@@ -234,6 +234,29 @@ export async function getLastExerciseLog(userId: number, exerciseId: number) {
   return logs[0] || null;
 }
 
+export async function getRecentExerciseLogs(userId: number, exerciseId: number, limit: number = 3) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const logs = await db
+    .select({
+      reps: exerciseLogs.reps,
+      load: exerciseLogs.load,
+      workoutDate: workoutLogs.workoutDate,
+    })
+    .from(exerciseLogs)
+    .innerJoin(workoutLogs, eq(exerciseLogs.workoutLogId, workoutLogs.id))
+    .where(and(
+      eq(workoutLogs.userId, userId),
+      eq(exerciseLogs.exerciseId, exerciseId),
+      eq(workoutLogs.completed, true)
+    ))
+    .orderBy(desc(workoutLogs.workoutDate))
+    .limit(limit);
+  
+  return logs;
+}
+
 export async function getExerciseLogsByExercise(userId: number, exerciseId: number) {
   const db = await getDb();
   if (!db) return [];

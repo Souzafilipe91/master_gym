@@ -20,6 +20,7 @@ import Conquistas from "./pages/Conquistas";
 import EvolucaoCarga from "./pages/EvolucaoCarga";
 import Calculadora1RM from "./pages/Calculadora1RM";
 import Configuracoes from "./pages/Configuracoes";
+import Personalizacao from "./pages/Personalizacao";
 import { LockScreenWidgetManager } from "./components/LockScreenWidgetManager";
 
 function Router() {
@@ -43,6 +44,7 @@ function Router() {
         <Route path={"/evolucao"} component={EvolucaoCarga} />
         <Route path={"/calculadora-1rm"} component={Calculadora1RM} />
         <Route path={"/configuracoes"} component={Configuracoes} />
+        <Route path={"/personalizacao"} component={Personalizacao} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

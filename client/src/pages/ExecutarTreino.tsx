@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize, List, ChevronRight, X, Calculator } from "lucide-react";
+import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize, List, ChevronRight, X, Calculator, Trophy, TrendingUp, Settings } from "lucide-react";
+import { toast } from "sonner";
 import { Link, useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 
@@ -27,6 +28,7 @@ export default function ExecutarTreino() {
   const [workoutStartTime] = useState(new Date());
   const [showExerciseList, setShowExerciseList] = useState(false);
   const [showEndWorkoutDialog, setShowEndWorkoutDialog] = useState(false);
+  const [prExerciseId, setPrExerciseId] = useState<number | null>(null); // ID do exercício que bateu PR
   const haptic = useHaptic();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -61,6 +63,12 @@ export default function ExecutarTreino() {
   // Buscar último log do exercício atual
   const { data: lastLog } = trpc.exerciseLogs.getLastLog.useQuery(
     { exerciseId: currentExercise?.exerciseId || 0 },
+    { enabled: !!currentExercise?.exerciseId }
+  );
+
+  // Buscar últimos 3 logs para histórico inline
+  const { data: recentLogs } = trpc.exerciseLogs.getRecentLogs.useQuery(
+    { exerciseId: currentExercise?.exerciseId || 0, limit: 3 },
     { enabled: !!currentExercise?.exerciseId }
   );
 
@@ -155,6 +163,17 @@ export default function ExecutarTreino() {
 
     // Vibração ao completar série
     haptic.setComplete();
+
+    // Verificar PR (Personal Record) — carga maior que o último registro
+    const currentLoad = currentSetData.load;
+    if (currentLoad > 0 && lastLog && currentLoad > Number(lastLog.load)) {
+      setPrExerciseId(currentExercise?.exerciseId || null);
+      haptic.success();
+      toast.success(`🏆 Novo PR! ${currentLoad}kg no ${currentExercise?.exerciseName}!`, {
+        description: `Anterior: ${lastLog.load}kg. Superado por ${(currentLoad - Number(lastLog.load)).toFixed(1)}kg!`,
+        duration: 5000,
+      });
+    }
 
     // Verificar se completou todas as séries do exercício
     if (currentSet >= (currentExercise?.sets || 0)) {
@@ -389,7 +408,22 @@ export default function ExecutarTreino() {
             <CardContent className="py-6 text-center">
               <Clock className="w-12 h-12 mx-auto mb-3 text-primary animate-pulse" />
               <h2 className="text-3xl font-bold mb-2">{restTimeLeft}s</h2>
-              <p className="text-muted-foreground mb-4">Tempo de descanso</p>
+              <p className="text-muted-foreground mb-2">Tempo de descanso</p>
+              {/* Indicar qual configuração está ativa */}
+              {(() => {
+                const userTime = localStorage.getItem("gym-rest-time-seconds");
+                const isUserConfig = userTime !== null && !isNaN(parseInt(userTime, 10));
+                return isUserConfig ? (
+                  <p className="text-xs text-primary/70 mb-4 flex items-center justify-center gap-1">
+                    <Settings className="w-3 h-3" />
+                    Configuração pessoal ({userTime}s)
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Tempo do programa
+                  </p>
+                );
+              })()}
               <Button onClick={handleSkipRest} variant="outline">
                 <SkipForward className="w-4 h-4 mr-2" />
                 Pular Descanso
@@ -494,19 +528,60 @@ export default function ExecutarTreino() {
                   <p className="text-sm text-muted-foreground">
                     <strong>Sugestão:</strong> {currentExercise.reps} repetições com {currentExercise.initialLoad}kg
                   </p>
-                  {currentExercise.restTime && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      <Clock className="w-3 h-3 inline mr-1" />
-                      Descanso: {currentExercise.restTime}
-                    </p>
-                  )}
+                  {(() => {
+                    const userTime = localStorage.getItem("gym-rest-time-seconds");
+                    const isUserConfig = userTime !== null && !isNaN(parseInt(userTime, 10));
+                    return (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        <Clock className="w-3 h-3 inline mr-1" />
+                        Descanso: {isUserConfig ? (
+                          <span className="text-primary font-medium">{userTime}s (pessoal)</span>
+                        ) : (
+                          <span>{currentExercise.restTime || '90s'} (programa)</span>
+                        )}
+                      </p>
+                    );
+                  })()}
                 </div>
+
+                {/* Histórico inline dos últimos 3 treinos */}
+                {recentLogs && recentLogs.length > 0 && (
+                  <div className="mt-3 p-3 bg-muted/50 border border-border rounded-lg">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" />
+                      Últimos treinos
+                    </p>
+                    <div className="space-y-1">
+                      {recentLogs.map((log, i) => (
+                        <div key={i} className="flex justify-between items-center text-xs">
+                          <span className="text-muted-foreground">
+                            {new Date(log.workoutDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          </span>
+                          <span className="font-medium">
+                            {log.reps} reps × {log.load}kg
+                            {i === 0 && prExerciseId === currentExercise?.exerciseId && (
+                              <span className="ml-1 text-yellow-500">🏆 PR</span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 {lastLog && (
                   <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                    <p className="text-sm font-medium text-primary">
-                      Última vez: {lastLog.reps} reps com {lastLog.load}kg
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-primary">
+                        Última vez: {lastLog.reps} reps com {lastLog.load}kg
+                      </p>
+                      {prExerciseId === currentExercise?.exerciseId && (
+                        <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30 text-xs">
+                          <Trophy className="w-3 h-3 mr-1" />
+                          PR!
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(lastLog.workoutDate).toLocaleDateString('pt-BR')}
                     </p>

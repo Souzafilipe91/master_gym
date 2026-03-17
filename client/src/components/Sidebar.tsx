@@ -14,7 +14,8 @@ import {
   Trophy,
   LineChart,
   Calculator,
-  Settings
+  Settings,
+  Palette
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -80,6 +81,11 @@ const menuItems = [
     title: "Configurações",
     href: "/configuracoes",
     icon: Settings,
+  },
+  {
+    title: "Personalização",
+    href: "/personalizacao",
+    icon: Palette,
   },
 ];
 
