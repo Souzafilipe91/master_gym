@@ -124,6 +124,48 @@ export function restoreScheduledReminders(): void {
   });
 }
 
+/**
+ * Envia notificação imediata de fim de descanso
+ * Funciona mesmo com a tela bloqueada via Service Worker
+ */
+export async function notifyRestEnd(): Promise<void> {
+  if (!checkNotificationPermission()) {
+    // Tenta solicitar permissão se ainda não foi concedida
+    const granted = await requestNotificationPermission();
+    if (!granted) return;
+  }
+
+  const title = '\u23F1\uFE0F Descanso Terminado!';
+  const body = 'Hora da próxima série. Vamos lá! 💪';
+
+  // Preferência: Service Worker notification (aparece na tela bloqueada)
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, {
+        body,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'rest-end',
+        requireInteraction: false,
+        silent: false,
+        vibrate: [200, 100, 200, 100, 200],
+      } as NotificationOptions);
+      return;
+    } catch (err) {
+      console.warn('[Notifications] SW notification failed, falling back:', err);
+    }
+  }
+
+  // Fallback: notificação simples
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, {
+      body,
+      icon: '/icon-192.png',
+    });
+  }
+}
+
 // Default workout schedule (can be customized by user)
 export const DEFAULT_WORKOUT_SCHEDULE = {
   A: { day: 1, time: '18:00' }, // Monday

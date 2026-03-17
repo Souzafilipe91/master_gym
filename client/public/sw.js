@@ -1,5 +1,5 @@
-const CACHE_NAME = 'filipe-treinos-v3';
-const DATA_CACHE_NAME = 'filipe-treinos-data-v3';
+const CACHE_NAME = 'filipe-treinos-v4';
+const DATA_CACHE_NAME = 'filipe-treinos-data-v4';
 
 const urlsToCache = [
   '/',
@@ -15,6 +15,29 @@ const API_CACHE_PATTERNS = [
   '/api/trpc/cycles',
   '/api/trpc/anamnese',
 ];
+
+// Responder a cliques em notificações
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  // Ao clicar na notificação de fim de descanso, abrir/focar o app
+  if (event.notification.tag === 'rest-end') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        // Se o app já está aberto, focar nele
+        for (const client of clientList) {
+          if (client.url && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Se não está aberto, abrir nova janela
+        if (clients.openWindow) {
+          return clients.openWindow('/');
+        }
+      })
+    );
+  }
+});
 
 // Install event - cache essential resources
 self.addEventListener('install', (event) => {

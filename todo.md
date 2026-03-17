@@ -260,3 +260,10 @@
 - [x] Implementar calculadora de 1RM (1 Repetição Máxima)
 - [x] Integrar calculadora no fluxo de treino
 - [x] Adicionar link de Evolução no menu principal
+
+## Melhorias Solicitadas (Mar 2026)
+
+- [x] Corrigir fuso horário: dia registrado no treino está sempre 1 dia antes do real
+- [x] Iniciar pesos dos exercícios em 0 (usuário digita a carga atual a cada treino)
+- [x] Adicionar configuração de tempo de descanso nas configurações gerais (válido para todos os treinos)
+- [x] Notificação push quando descanso termina e tela está bloqueada

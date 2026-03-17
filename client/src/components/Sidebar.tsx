@@ -13,7 +13,8 @@ import {
   LogOut,
   Trophy,
   LineChart,
-  Calculator
+  Calculator,
+  Settings
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -74,6 +75,11 @@ const menuItems = [
     title: "Conquistas",
     href: "/conquistas",
     icon: Trophy,
+  },
+  {
+    title: "Configurações",
+    href: "/configuracoes",
+    icon: Settings,
   },
 ];
 

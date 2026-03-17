@@ -10,6 +10,8 @@ import { useState, useEffect } from "react";
 
 import { useHaptic } from "@/hooks/useHaptic";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { notifyRestEnd, requestNotificationPermission } from "@/lib/notifications";
+import { getRestTimeFromSettings } from "./Configuracoes";
 
 export default function ExecutarTreino() {
   const params = useParams<{ code: string }>();
@@ -96,6 +98,11 @@ export default function ExecutarTreino() {
     localStorage.setItem(storageKey, JSON.stringify(state));
   }, [currentExerciseIndex, currentSet, exerciseData, workoutCode, storageKey]);
 
+  // Solicitar permissão de notificação ao iniciar o treino
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
   // Timer de descanso
   useEffect(() => {
     if (isResting && restTimeLeft > 0) {
@@ -106,13 +113,17 @@ export default function ExecutarTreino() {
     } else if (restTimeLeft === 0 && isResting) {
       setIsResting(false);
       haptic.restEnd(); // Vibração ao fim do descanso
+      // Enviar notificação push (funciona com tela bloqueada)
+      notifyRestEnd();
     }
   }, [isResting, restTimeLeft]);
 
   const parseRestTime = (restTime: string | null): number => {
-    if (!restTime) return 90;
+    // Usar configuração global como padrão
+    const defaultRestTime = getRestTimeFromSettings();
+    if (!restTime) return defaultRestTime;
     const match = restTime.match(/(\d+)/);
-    return match ? parseInt(match[1]) : 90;
+    return match ? parseInt(match[1]) : defaultRestTime;
   };
 
   const handleCompleteSet = () => {
@@ -120,7 +131,7 @@ export default function ExecutarTreino() {
     if (!exerciseId) return;
 
     const data = exerciseData[exerciseId] || { sets: [] };
-    const currentSetData = data.sets[currentSet - 1] || { reps: 10, load: Number(currentExercise?.initialLoad) || 0 };
+    const currentSetData = data.sets[currentSet - 1] || { reps: 10, load: 0 };
     
     // Salvar dados da série
     const newData = { ...exerciseData };
@@ -205,7 +216,14 @@ export default function ExecutarTreino() {
       const workoutLog = await createWorkoutLog.mutateAsync({
         workoutTypeId: workoutType.id,
         cycleId: currentCycle.id,
-        workoutDate: new Date().toISOString().split('T')[0],
+        workoutDate: (() => {
+          // Usar data local (não UTC) para evitar erro de fuso horário
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        })(),
         notes: `Treino realizado em ${Math.round((new Date().getTime() - workoutStartTime.getTime()) / 60000)} minutos`,
       });
 
@@ -245,7 +263,7 @@ export default function ExecutarTreino() {
     const data = exerciseData[exerciseId] || { sets: [] };
     const currentSetData = data.sets[currentSet - 1] || { 
       reps: 10, 
-      load: Number(currentExercise?.initialLoad) || 0 
+      load: 0 
     };
     
     currentSetData[field] = value;
@@ -260,13 +278,14 @@ export default function ExecutarTreino() {
 
   const getCurrentSetData = () => {
     const exerciseId = currentExercise?.exerciseId;
-    if (!exerciseId) return { reps: 10, load: Number(currentExercise?.initialLoad) || 0 };
+    if (!exerciseId) return { reps: 10, load: 0 };
     
     const data = exerciseData[exerciseId];
     if (!data || !data.sets[currentSet - 1]) {
+      // Iniciar com 0 para que o usuário insira a carga atual
       return { 
         reps: 10, 
-        load: Number(currentExercise?.initialLoad) || 0 
+        load: 0 
       };
     }
     return data.sets[currentSet - 1];
