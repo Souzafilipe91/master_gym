@@ -104,22 +104,32 @@ describe("Configuração de tempo de descanso", () => {
     localStorage.removeItem(REST_TIME_KEY);
   });
 
-  it("deve usar o tempo de descanso das configurações no parseRestTime", () => {
-    localStorage.setItem(REST_TIME_KEY, "120");
-
+  it("deve usar a configuração do usuário com prioridade sobre o valor do banco", () => {
+    // Nova lógica: configuração do usuário SEMPRE prevalece sobre o valor do exercício
     const parseRestTime = (restTime: string | null): number => {
-      const defaultRestTime = getRestTimeFromSettings();
-      if (!restTime) return defaultRestTime;
+      const REST_TIME_KEY = "gym-rest-time-seconds";
+      const DEFAULT_REST_TIME = 90;
+      const userSavedTime = localStorage.getItem(REST_TIME_KEY);
+      if (userSavedTime !== null) {
+        const parsed = parseInt(userSavedTime, 10);
+        if (!isNaN(parsed) && parsed >= 10) return parsed;
+      }
+      if (!restTime) return DEFAULT_REST_TIME;
       const match = restTime.match(/(\d+)/);
-      return match ? parseInt(match[1]) : defaultRestTime;
+      return match ? parseInt(match[1]) : DEFAULT_REST_TIME;
     };
 
-    // Sem restTime definido, usa configuração global
-    expect(parseRestTime(null)).toBe(120);
+    // Usuário configurou 120s: deve usar 120s mesmo que o exercício tenha "90s" no banco
+    localStorage.setItem(REST_TIME_KEY, "120");
+    expect(parseRestTime("90s")).toBe(120); // banco diz 90s, mas usuário quer 120s
+    expect(parseRestTime("60s")).toBe(120); // banco diz 60s, mas usuário quer 120s
+    expect(parseRestTime(null)).toBe(120);  // sem valor no banco, usa configuração
 
-    // Com restTime definido no exercício, usa o do exercício
-    expect(parseRestTime("60s")).toBe(60);
-    expect(parseRestTime("2 min")).toBe(2);
+    // Sem configuração do usuário: usa o valor do banco
+    localStorage.removeItem(REST_TIME_KEY);
+    expect(parseRestTime("90s")).toBe(90);  // usa o valor do banco
+    expect(parseRestTime("60s")).toBe(60);  // usa o valor do banco
+    expect(parseRestTime(null)).toBe(90);   // sem valor no banco, usa padrão 90s
 
     localStorage.removeItem(REST_TIME_KEY);
   });

@@ -119,11 +119,23 @@ export default function ExecutarTreino() {
   }, [isResting, restTimeLeft]);
 
   const parseRestTime = (restTime: string | null): number => {
-    // Usar configuração global como padrão
-    const defaultRestTime = getRestTimeFromSettings();
-    if (!restTime) return defaultRestTime;
+    // A configuração global do usuário sempre tem prioridade.
+    // O valor do banco (restTime do exercício) é o padrão do programa,
+    // mas se o usuário alterou nas Configurações, esse valor prevalece.
+    const REST_TIME_KEY = "gym-rest-time-seconds";
+    const DEFAULT_REST_TIME = 90;
+    const userSavedTime = localStorage.getItem(REST_TIME_KEY);
+    
+    // Se o usuário salvou uma configuração explícita, usar ela
+    if (userSavedTime !== null) {
+      const parsed = parseInt(userSavedTime, 10);
+      if (!isNaN(parsed) && parsed >= 10) return parsed;
+    }
+    
+    // Caso contrário, usar o valor definido no programa para o exercício
+    if (!restTime) return DEFAULT_REST_TIME;
     const match = restTime.match(/(\d+)/);
-    return match ? parseInt(match[1]) : defaultRestTime;
+    return match ? parseInt(match[1]) : DEFAULT_REST_TIME;
   };
 
   const handleCompleteSet = () => {

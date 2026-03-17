@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, exerciseId, restTime, sets, reps FROM workout_exercises LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2eJZ6uYkQqqj2tc.root --database EVvjYMQDCpqg6oqAYCDCXo --execute SELECT id, exerciseId, restTime, sets, reps FROM workout_exercises LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "exerciseId": "1",
+      "restTime": "90s",
+      "sets": "6",
+      "reps": "2x12 / 2x10 / 2x8"
+    },
+    {
+      "id": "2",
+      "exerciseId": "2",
+      "restTime": "90s",
+      "sets": "5",
+      "reps": "1x12 / 2x10 / 2x8"
+    },
+    {
+      "id": "3",
+      "exerciseId": "3",
+      "restTime": "75s",
+      "sets": "4",
+      "reps": "3x10-12 + 1x4+4+4"
+    },
+    {
+      "id": "4",
+      "exerciseId": "4",
+      "restTime": "75s",
+      "sets": "4",
+      "reps": "3x10-12 + 1x4+4+4"
+    },
+    {
+      "id": "5",
+      "exerciseId": "5",
+      "restTime": "60s",
+      "sets": "3",
+      "reps": "3x12-15"
+    },
+    {
+      "id": "6",
+      "exerciseId": "36",
+      "restTime": "60s",
+      "sets": "5",
+      "reps": "4x10+falha + 1x15"
+    },
+    {
+      "id": "7",
+      "exerciseId": "37",
+      "restTime": "60s",
+      "sets": "4",
+      "reps": "4x10-12"
+    },
+    {
+      "id": "8",
+      "exerciseId": "38",
+      "restTime": "60s",
+      "sets": "4",
+      "reps": "4x10-12"
+    },
+    {
+      "id": "9",
+      "exerciseId": "8",
+      "restTime": "90s",
+      "sets": "6",
+      "reps": "2x12 / 2x10 / 2x8"
+    },
+    {
+      "id": "10",
+      "exerciseId": "9",
+      "restTime": "75s",
+      "sets": "5",
+      "reps": "4x10-12 + 1x4+4+4"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\texerciseId\trestTime\tsets\treps\n1\t1\t90s\t6\t2x12 / 2x10 / 2x8\n2\t2\t90s\t5\t1x12 / 2x10 / 2x8\n3\t3\t75s\t4\t3x10-12 + 1x4+4+4\n4\t4\t75s\t4\t3x10-12 + 1x4+4+4\n5\t5\t60s\t3\t3x12-15\n6\t36\t60s\t5\t4x10+falha + 1x15\n7\t37\t60s\t4\t4x10-12\n8\t38\t60s\t4\t4x10-12\n9\t8\t90s\t6\t2x12 / 2x10 / 2x8\n10\t9\t75s\t5\t4x10-12 + 1x4+4+4\n",
+  "stderr": "",
+  "execution_time_ms": 157
+}

@@ -42,10 +42,11 @@ export default function Configuracoes() {
   };
 
   const handleReset = () => {
-    localStorage.setItem(REST_TIME_KEY, String(DEFAULT_REST_TIME));
+    // Remover a sobreposição para que os tempos originais do programa sejam usados
+    localStorage.removeItem(REST_TIME_KEY);
     setRestTime(DEFAULT_REST_TIME);
     setInputValue(String(DEFAULT_REST_TIME));
-    toast.success("Configurações restauradas para o padrão.");
+    toast.success("Sobreposição removida. Os tempos originais do programa serão usados.");
   };
 
   const handleSliderChange = (value: number[]) => {
@@ -96,8 +97,8 @@ export default function Configuracoes() {
             </CardTitle>
             <CardDescription>
               Define o tempo de descanso entre séries para todos os treinos.
-              Cada exercício pode ter seu próprio tempo definido no programa,
-              mas este valor é usado como padrão quando não especificado.
+              Quando configurado, este valor <strong>substitui</strong> o tempo definido no programa para cada exercício.
+              Para usar os tempos originais do programa, clique em "Padrão (90s)" e salve.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -175,7 +176,7 @@ export default function Configuracoes() {
               </Button>
               <Button variant="outline" onClick={handleReset}>
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Padrão (90s)
+                Usar tempos do programa
               </Button>
             </div>
           </CardContent>
@@ -188,10 +189,10 @@ export default function Configuracoes() {
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-2">
             <p>
-              O tempo de descanso configurado aqui é aplicado automaticamente entre todas as séries durante a execução do treino.
+              O tempo configurado aqui <strong className="text-foreground">substitui</strong> o tempo de descanso de todos os exercícios durante o treino, independente do que está definido no programa.
             </p>
             <p>
-              Se um exercício específico tiver um tempo de descanso definido no programa (ex: "120s"), esse valor tem prioridade sobre a configuração geral.
+              Para voltar a usar os tempos originais de cada exercício (definidos no programa), clique em <strong className="text-foreground">"Padrão (90s)"</strong> e salve — isso remove a sobreposição.
             </p>
             <p>
               A configuração é salva localmente no dispositivo e persiste entre sessões.
