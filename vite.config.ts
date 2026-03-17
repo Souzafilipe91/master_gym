@@ -17,6 +17,8 @@ export default defineConfig({
       "@shared": path.resolve(import.meta.dirname, "shared"),
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
+    // Garantir que apenas uma cópia do React seja usada em todo o projeto
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
   },
   envDir: path.resolve(import.meta.dirname),
   root: path.resolve(import.meta.dirname, "client"),
