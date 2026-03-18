@@ -279,3 +279,4 @@
 - [x] Tema pré-definido: Roxo e Verde (EVA Unit 1)
 - [x] Personalização completa: seletor de cor com círculo cromático
 - [x] Corrigir ícone do app que parou de aparecer
+- [x] Corrigir personalização customizada — usuário não consegue alterar cores

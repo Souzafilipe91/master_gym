@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,18 +7,8 @@ import { Link } from "wouter";
 import { useTheme, THEME_PRESETS, type ThemeColors, type ThemePreset } from "@/hooks/useTheme";
 import { toast } from "sonner";
 
-// Converte HSL (do color picker nativo) para oklch aproximado
-function hslToOklch(h: number, s: number, l: number): string {
-  // Converter para valores 0-1
-  const sl = s / 100;
-  const ll = l / 100;
-  // Aproximação: oklch(L C H) onde L ≈ l, C ≈ s*0.25 para saturação moderada
-  const oklchL = Math.max(0.05, Math.min(0.98, ll));
-  const oklchC = sl * 0.28; // chroma aproximado
-  return `oklch(${oklchL.toFixed(2)} ${oklchC.toFixed(3)} ${h})`;
-}
+// ─── Conversão de cores ──────────────────────────────────────────────────────
 
-// Converte hex para HSL
 function hexToHsl(hex: string): [number, number, number] {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -38,20 +28,46 @@ function hexToHsl(hex: string): [number, number, number] {
   return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
 }
 
-// Gera oklch a partir de hex
 function hexToOklch(hex: string): string {
   const [h, s, l] = hexToHsl(hex);
-  return hslToOklch(h, s, l);
+  const sl = s / 100;
+  const ll = l / 100;
+  const oklchL = Math.max(0.05, Math.min(0.98, ll));
+  const oklchC = sl * 0.28;
+  return `oklch(${oklchL.toFixed(2)} ${oklchC.toFixed(3)} ${h})`;
 }
 
-// Gera uma cor de foreground adequada baseada no background
 function getContrastFg(backgroundOklch: string): string {
   const match = backgroundOklch.match(/oklch\(([\d.]+)/);
   if (match && parseFloat(match[1]) > 0.5) {
-    return "oklch(0.12 0.005 285)"; // escuro para fundo claro
+    return "oklch(0.12 0.005 285)";
   }
-  return "oklch(0.98 0.005 285)"; // claro para fundo escuro
+  return "oklch(0.98 0.005 285)";
 }
+
+function oklchToHex(oklch: string): string {
+  const match = oklch.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+  if (!match) return "#888888";
+  const l = parseFloat(match[1]);
+  const c = parseFloat(match[2]);
+  const h = parseFloat(match[3]);
+  const s = Math.min(1, c / 0.28);
+  const hslToRgb = (hh: number, ss: number, ll: number) => {
+    const a = ss * Math.min(ll, 1 - ll);
+    const f = (n: number) => {
+      const k = (n + hh / 30) % 12;
+      return ll - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    };
+    return [f(0), f(8), f(4)];
+  };
+  const [r, g, b] = hslToRgb(h, s, l);
+  const toHex = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+// ─── ColorPicker: input visível estilizado como círculo ──────────────────────
+// Usar label wrapping o input é o método mais compatível com mobile
+// O input type="color" fica com opacity-0 mas posicionado sobre o círculo visual
 
 interface ColorPickerProps {
   label: string;
@@ -60,62 +76,38 @@ interface ColorPickerProps {
 }
 
 function ColorPicker({ label, value, onChange }: ColorPickerProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="flex items-center gap-3">
-      <button
-        type="button"
-        className="w-10 h-10 rounded-full border-2 border-border shadow-sm cursor-pointer hover:scale-110 transition-transform"
-        style={{ backgroundColor: value }}
-        onClick={() => inputRef.current?.click()}
-        aria-label={`Selecionar cor: ${label}`}
-      />
+      {/* Label envolve o input — clique no círculo abre o picker nativamente */}
+      <label className="relative w-12 h-12 rounded-full cursor-pointer shrink-0 block" style={{ touchAction: "manipulation" }}>
+        {/* Círculo visual */}
+        <span
+          className="absolute inset-0 rounded-full border-2 border-white/20 shadow-md block"
+          style={{ backgroundColor: value }}
+        />
+        {/* Input real — cobre o círculo inteiro, opacity 0 mas clicável */}
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer rounded-full"
+          style={{ padding: 0, border: "none" }}
+        />
+      </label>
       <div className="flex-1">
         <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-muted-foreground">{value}</p>
+        <p className="text-xs text-muted-foreground font-mono">{value}</p>
       </div>
-      <input
-        ref={inputRef}
-        type="color"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="sr-only"
-      />
     </div>
   );
 }
 
-// Converte oklch para hex aproximado (para exibição no color picker)
-function oklchToHex(oklch: string): string {
-  const match = oklch.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
-  if (!match) return "#888888";
-  const l = parseFloat(match[1]);
-  const c = parseFloat(match[2]);
-  const h = parseFloat(match[3]);
-  // Converter oklch → rgb aproximado via hsl
-  const hDeg = h;
-  const s = Math.min(1, c / 0.28);
-  // oklch L para HSL L (aproximação)
-  const hslL = l;
-  // HSL para RGB
-  const hslToRgb = (h: number, s: number, l: number) => {
-    const a = s * Math.min(l, 1 - l);
-    const f = (n: number) => {
-      const k = (n + h / 30) % 12;
-      return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    };
-    return [f(0), f(8), f(4)];
-  };
-  const [r, g, b] = hslToRgb(hDeg, s, hslL);
-  const toHex = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0");
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-}
+// ─── Página principal ────────────────────────────────────────────────────────
 
 export default function Personalizacao() {
   const { activePreset, applyPreset, applyCustom, getCurrentColors } = useTheme();
   const [tab, setTab] = useState<"presets" | "custom">("presets");
 
-  // Estado do customizador
   const currentColors = getCurrentColors();
   const [primaryHex, setPrimaryHex] = useState(() => oklchToHex(currentColors.primary));
   const [bgHex, setBgHex] = useState(() => oklchToHex(currentColors.background));
@@ -131,16 +123,17 @@ export default function Personalizacao() {
     const fgOklch = getContrastFg(bgOklch);
     const isLight = parseFloat(bgOklch.match(/oklch\(([\d.]+)/)?.[1] || "0") > 0.5;
 
-    const cardL = isLight ? "calc(l - 0.03)" : "calc(l + 0.03)";
-    const sidebarL = isLight ? "calc(l - 0.05)" : "calc(l + 0.02)";
-
     const colors: ThemeColors = {
       primary: primaryOklch,
       primaryFg: getContrastFg(primaryOklch),
       background: bgOklch,
       foreground: fgOklch,
-      card: `oklch(from ${bgOklch} ${cardL} c h)`,
-      sidebar: `oklch(from ${bgOklch} ${sidebarL} c h)`,
+      card: isLight
+        ? `oklch(from ${bgOklch} calc(l - 0.03) c h)`
+        : `oklch(from ${bgOklch} calc(l + 0.03) c h)`,
+      sidebar: isLight
+        ? `oklch(from ${bgOklch} calc(l - 0.05) c h)`
+        : `oklch(from ${bgOklch} calc(l + 0.02) c h)`,
       accent: primaryOklch,
       ring: primaryOklch,
     };
@@ -148,6 +141,9 @@ export default function Personalizacao() {
     applyCustom(colors);
     toast.success("Tema personalizado aplicado!");
   }, [primaryHex, bgHex, applyCustom]);
+
+  const fgColor = getContrastFg(hexToOklch(bgHex)) === "oklch(0.98 0.005 285)" ? "#f0f0f0" : "#1a1a1a";
+  const primaryFgColor = getContrastFg(hexToOklch(primaryHex)) === "oklch(0.98 0.005 285)" ? "#f0f0f0" : "#1a1a1a";
 
   return (
     <div className="min-h-screen bg-background">
@@ -210,7 +206,6 @@ export default function Personalizacao() {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
-                      {/* Preview de cores */}
                       <div className="flex gap-1.5 shrink-0">
                         <div
                           className="w-8 h-8 rounded-full border border-border shadow-sm"
@@ -251,7 +246,7 @@ export default function Personalizacao() {
                   Cores Personalizadas
                 </CardTitle>
                 <CardDescription>
-                  Clique nos círculos para abrir o seletor de cor e escolher qualquer tonalidade.
+                  Toque nos círculos coloridos para abrir o seletor de cor.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -268,35 +263,31 @@ export default function Personalizacao() {
 
                 {/* Preview ao vivo */}
                 <div className="rounded-xl overflow-hidden border border-border">
-                  <div
-                    className="p-4"
-                    style={{ backgroundColor: bgHex }}
-                  >
-                    <p
-                      className="text-sm font-semibold mb-2"
-                      style={{ color: getContrastFg(hexToOklch(bgHex)) === "oklch(0.98 0.005 285)" ? "#f5f5f5" : "#1a1a1a" }}
-                    >
-                      Preview
+                  <div className="p-4" style={{ backgroundColor: bgHex }}>
+                    <p className="text-sm font-semibold mb-3" style={{ color: fgColor }}>
+                      Preview ao vivo
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <div
                         className="px-3 py-1.5 rounded-md text-xs font-medium"
-                        style={{
-                          backgroundColor: primaryHex,
-                          color: getContrastFg(hexToOklch(primaryHex)) === "oklch(0.98 0.005 285)" ? "#f5f5f5" : "#1a1a1a",
-                        }}
+                        style={{ backgroundColor: primaryHex, color: primaryFgColor }}
                       >
                         Botão primário
                       </div>
                       <div
                         className="px-3 py-1.5 rounded-md text-xs border"
-                        style={{
-                          borderColor: primaryHex,
-                          color: primaryHex,
-                          backgroundColor: "transparent",
-                        }}
+                        style={{ borderColor: primaryHex, color: primaryHex, backgroundColor: "transparent" }}
                       >
                         Outline
+                      </div>
+                      <div
+                        className="px-3 py-1.5 rounded-md text-xs"
+                        style={{
+                          backgroundColor: `${primaryHex}22`,
+                          color: primaryHex,
+                        }}
+                      >
+                        Badge
                       </div>
                     </div>
                   </div>
@@ -308,7 +299,7 @@ export default function Personalizacao() {
                 </Button>
 
                 {activePreset === "custom" && (
-                  <p className="text-xs text-center text-primary">
+                  <p className="text-xs text-center text-primary font-medium">
                     ✓ Tema personalizado ativo
                   </p>
                 )}
@@ -318,7 +309,7 @@ export default function Personalizacao() {
             <Card>
               <CardContent className="p-4 text-xs text-muted-foreground space-y-1">
                 <p>
-                  <strong className="text-foreground">Dica:</strong> Para um resultado mais equilibrado, escolha um fundo bem escuro (quase preto) ou bem claro (quase branco) e uma cor de destaque vibrante.
+                  <strong className="text-foreground">Dica:</strong> Para melhor resultado, escolha um fundo bem escuro (quase preto) ou bem claro (quase branco) e uma cor de destaque vibrante.
                 </p>
                 <p>
                   As cores intermediárias (cards, bordas, sidebar) são geradas automaticamente a partir do fundo escolhido.
