@@ -5,7 +5,6 @@ import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Dumbbell, TrendingUp, User, Calendar, Activity } from "lucide-react";
 import { Link } from "wouter";
-import { NotificationSettings } from "@/components/NotificationSettings";
 
 export default function Home() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -106,12 +105,6 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Notificações */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Notificações</h2>
-          <NotificationSettings />
         </div>
 
         {/* Acesso Rápido */}

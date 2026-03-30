@@ -1,17 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { Sparkles, Loader2, CheckCircle2 } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle2, BookmarkPlus, Bookmark, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 
 export default function GerarTreino() {
   const [generatedPlan, setGeneratedPlan] = useState<string | null>(null);
-  
+  const [saved, setSaved] = useState(false);
+
   const generateMutation = trpc.anamnese.generateWorkout.useMutation({
     onSuccess: (data) => {
       setGeneratedPlan(String(data.workoutPlan));
+      setSaved(false);
       toast.success("Treino gerado com sucesso!");
     },
     onError: (error) => {
@@ -19,9 +21,29 @@ export default function GerarTreino() {
     },
   });
 
+  const saveMutation = trpc.savedWorkouts.save.useMutation({
+    onSuccess: () => {
+      setSaved(true);
+      toast.success("Treino salvo em Meus Treinos!");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const handleGenerate = () => {
     setGeneratedPlan(null);
+    setSaved(false);
     generateMutation.mutate({});
+  };
+
+  const handleSave = () => {
+    if (!generatedPlan) return;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    saveMutation.mutate({
+      type: "musculacao",
+      title: `Treino IA — Musculação (${dateStr})`,
+      content: generatedPlan,
+    });
   };
 
   return (
@@ -109,10 +131,23 @@ export default function GerarTreino() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-4">
-                  <Button onClick={handleGenerate} variant="outline">
-                    <Sparkles className="w-4 h-4 mr-2" />
+                <div className="flex gap-3 flex-wrap">
+                  <Button onClick={handleGenerate} variant="outline" disabled={generateMutation.isPending}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
                     Gerar Novo Treino
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saveMutation.isPending || saved}
+                    variant={saved ? "secondary" : "default"}
+                  >
+                    {saved ? (
+                      <><Bookmark className="w-4 h-4 mr-2 fill-current" />Salvo em Meus Treinos</>
+                    ) : saveMutation.isPending ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</>
+                    ) : (
+                      <><BookmarkPlus className="w-4 h-4 mr-2" />Salvar em Meus Treinos</>
+                    )}
                   </Button>
                 </div>
               </CardContent>

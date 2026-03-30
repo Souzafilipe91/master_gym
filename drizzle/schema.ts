@@ -284,7 +284,7 @@ export type InsertWorkoutSession = typeof workoutSessions.$inferInsert;
 export const savedAiWorkouts = mysqlTable("saved_ai_workouts", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  type: mysqlEnum("type", ["calistenia", "copied"]).notNull(),
+  type: mysqlEnum("type", ["calistenia", "copied", "musculacao"]).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   content: text("content").notNull(), // markdown do treino gerado
   // Para treinos copiados

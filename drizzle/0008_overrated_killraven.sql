@@ -1,0 +1,1 @@
+ALTER TABLE `saved_ai_workouts` MODIFY COLUMN `type` enum('calistenia','copied','musculacao') NOT NULL;

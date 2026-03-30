@@ -408,7 +408,7 @@ export async function saveAiWorkout(data: InsertSavedAiWorkout) {
   return result;
 }
 
-export async function getSavedAiWorkouts(userId: number, type?: "calistenia" | "copied") {
+export async function getSavedAiWorkouts(userId: number, type?: "calistenia" | "copied" | "musculacao") {
   const db = await getDb();
   if (!db) return [];
   const conditions = [eq(savedAiWorkouts.userId, userId)];

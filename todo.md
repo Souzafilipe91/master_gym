@@ -302,3 +302,17 @@
 ## Bug — Personalização de Cores
 
 - [x] Corrigir definitivamente: cores customizadas não são aplicadas visualmente no app
+
+## Integração Treinos IA → Meus Treinos
+
+- [ ] Treinos gerados por IA (Calistenia, Gerar Treino IA, Copiar Treino) aparecem em Meus Treinos
+- [ ] Mesmo design e fluxo dos treinos do programa (executar, histórico, etc.)
+
+## Meus Treinos — Partições por Categoria
+
+- [x] Adicionar botão salvar no GerarTreino IA (musculação)
+- [x] Adicionar botão salvar no CopiarTreino
+- [x] Reescrever Meus Treinos com seções: Musculação (programa atual), Calistenia, Cópia por Vídeo
+- [x] Separar "treino atual" dos "treinos anteriores" dentro de cada seção
+- [x] Criar página de detalhes para treinos IA salvos com mesmo design do TreinoDetalhes
+- [x] Remover bloco de notificações de treinos diários do Dashboard

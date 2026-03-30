@@ -353,7 +353,7 @@ Formate a resposta em Markdown com seções claras e bem organizadas.`;
   savedWorkouts: router({
     save: protectedProcedure
       .input(z.object({
-        type: z.enum(["calistenia", "copied"]),
+        type: z.enum(["calistenia", "copied", "musculacao"]),
         title: z.string().min(1),
         content: z.string().min(1),
         athleteName: z.string().optional(),
@@ -368,7 +368,7 @@ Formate a resposta em Markdown com seções claras e bem organizadas.`;
         return { success: true };
       }),
     getAll: protectedProcedure
-      .input(z.object({ type: z.enum(["calistenia", "copied"]).optional() }))
+      .input(z.object({ type: z.enum(["calistenia", "copied", "musculacao"]).optional() }))
       .query(async ({ ctx, input }) => {
         return await db.getSavedAiWorkouts(ctx.user.id, input.type);
       }),
