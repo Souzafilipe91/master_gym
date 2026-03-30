@@ -5,7 +5,6 @@ import {
   LayoutDashboard, 
   Library, 
   ClipboardList, 
-  TrendingUp, 
   History,
   FileText,
   Menu,
@@ -17,7 +16,8 @@ import {
   Settings,
   Palette,
   Home,
-  Video
+  Video,
+  BookOpen
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -55,11 +55,6 @@ const menuItems = [
     icon: FileText,
   },
   {
-    title: "Progresso",
-    href: "/progresso",
-    icon: TrendingUp,
-  },
-  {
     title: "Evolução de Carga",
     href: "/evolucao",
     icon: LineChart,
@@ -88,6 +83,11 @@ const menuItems = [
     title: "Copiar Treino",
     href: "/copiar-treino",
     icon: Video,
+  },
+  {
+    title: "Treinos Salvos",
+    href: "/treinos-salvos",
+    icon: BookOpen,
   },
   {
     title: "Configurações",

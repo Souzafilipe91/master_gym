@@ -22,6 +22,7 @@ import Calculadora1RM from "./pages/Calculadora1RM";
 import Configuracoes from "./pages/Configuracoes";
 import Personalizacao from "./pages/Personalizacao";
 import Calistenia from "./pages/Calistenia";
+import TreinosSalvos from "./pages/TreinosSalvos";
 import CopiarTreino from "./pages/CopiarTreino";
 import { LockScreenWidgetManager } from "./components/LockScreenWidgetManager";
 
@@ -49,6 +50,7 @@ function Router() {
         <Route path={"/personalizacao"} component={Personalizacao} />
         <Route path={"/calistenia"} component={Calistenia} />
         <Route path={"/copiar-treino"} component={CopiarTreino} />
+        <Route path={"/treinos-salvos"} component={TreinosSalvos} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

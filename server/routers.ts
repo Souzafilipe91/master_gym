@@ -349,6 +349,37 @@ Formate a resposta em Markdown com seções claras e bem organizadas.`;
       }),
   }),
 
+  // Treinos IA Salvos
+  savedWorkouts: router({
+    save: protectedProcedure
+      .input(z.object({
+        type: z.enum(["calistenia", "copied"]),
+        title: z.string().min(1),
+        content: z.string().min(1),
+        athleteName: z.string().optional(),
+        videoUrl: z.string().optional(),
+        videoAnalysis: z.string().optional(),
+        focus: z.string().optional(),
+        duration: z.number().optional(),
+        difficulty: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.saveAiWorkout({ userId: ctx.user.id, ...input });
+        return { success: true };
+      }),
+    getAll: protectedProcedure
+      .input(z.object({ type: z.enum(["calistenia", "copied"]).optional() }))
+      .query(async ({ ctx, input }) => {
+        return await db.getSavedAiWorkouts(ctx.user.id, input.type);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deleteSavedAiWorkout(input.id, ctx.user.id);
+        return { success: true };
+      }),
+  }),
+
   // Calistenia — treinos em casa gerados por IA
   calistenia: router({
     generate: protectedProcedure

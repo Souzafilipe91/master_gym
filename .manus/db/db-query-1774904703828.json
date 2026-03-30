@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `saved_ai_workouts` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `userId` int NOT NULL,\n  `type` enum('calistenia','copied') NOT NULL,\n  `title` varchar(255) NOT NULL,\n  `content` text NOT NULL,\n  `athleteName` varchar(255),\n  `videoUrl` varchar(512),\n  `videoAnalysis` text,\n  `focus` varchar(100),\n  `duration` int,\n  `difficulty` varchar(50),\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `saved_ai_workouts_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2eJZ6uYkQqqj2tc.root --database EVvjYMQDCpqg6oqAYCDCXo --execute CREATE TABLE IF NOT EXISTS `saved_ai_workouts` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `userId` int NOT NULL,\n  `type` enum('calistenia','copied') NOT NULL,\n  `title` varchar(255) NOT NULL,\n  `content` text NOT NULL,\n  `athleteName` varchar(255),\n  `videoUrl` varchar(512),\n  `videoAnalysis` text,\n  `focus` varchar(100),\n  `duration` int,\n  `difficulty` varchar(50),\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `saved_ai_workouts_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 206
+}

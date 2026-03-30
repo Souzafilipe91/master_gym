@@ -6,7 +6,6 @@ import { trpc } from "@/lib/trpc";
 import { Dumbbell, TrendingUp, User, Calendar, Activity } from "lucide-react";
 import { Link } from "wouter";
 import { NotificationSettings } from "@/components/NotificationSettings";
-import { WeeklyProgressWidget } from "@/components/WeeklyProgressWidget";
 
 export default function Home() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -109,11 +108,6 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Progresso Semanal */}
-        <div className="mb-8">
-          <WeeklyProgressWidget />
-        </div>
-
         {/* Notificações */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Notificações</h2>
@@ -159,14 +153,7 @@ export default function Home() {
                 </CardHeader>
               </Card>
             </Link>
-            <Link href="/progresso">
-              <Card className="hover:border-primary/50 transition-all cursor-pointer">
-                <CardHeader>
-                  <CardTitle>Progresso</CardTitle>
-                  <CardDescription>Acompanhe sua evolução</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
+
           </div>
         </div>
       </main>

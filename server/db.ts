@@ -4,7 +4,7 @@ import {
   InsertUser, users, cycles, workoutTypes, muscleGroups, exercises, 
   workoutExercises, workoutLogs, exerciseLogs, weightLogs, 
   cardioRecommendations, cardioLogs, anamneses, InsertAnamnese,
-  achievements, userAchievements
+  achievements, userAchievements, savedAiWorkouts, InsertSavedAiWorkout
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -398,6 +398,41 @@ export async function unlockAchievement(userId: number, achievementId: number) {
   return result;
 }
 
+
+// ─── Treinos IA Salvos ───────────────────────────────────────────────────────
+
+export async function saveAiWorkout(data: InsertSavedAiWorkout) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(savedAiWorkouts).values(data);
+  return result;
+}
+
+export async function getSavedAiWorkouts(userId: number, type?: "calistenia" | "copied") {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(savedAiWorkouts.userId, userId)];
+  if (type) conditions.push(eq(savedAiWorkouts.type, type));
+  return await db.select().from(savedAiWorkouts)
+    .where(and(...conditions))
+    .orderBy(desc(savedAiWorkouts.createdAt));
+}
+
+export async function getSavedAiWorkoutById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(savedAiWorkouts)
+    .where(and(eq(savedAiWorkouts.id, id), eq(savedAiWorkouts.userId, userId)))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function deleteSavedAiWorkout(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.delete(savedAiWorkouts)
+    .where(and(eq(savedAiWorkouts.id, id), eq(savedAiWorkouts.userId, userId)));
+}
 
 // Verificar e desbloquear conquistas automaticamente
 export async function checkAndUnlockAchievements(userId: number) {

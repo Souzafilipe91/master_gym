@@ -289,3 +289,12 @@
 - [x] Criar backend: rota tRPC copyWorkoutFromVideo que analisa vídeo e gera treino
 - [x] Adicionar links no menu lateral para Calistenia e Copiar Treino
 - [x] Escrever testes para as novas rotas
+
+## Melhorias — Salvar Treinos, Histórico, Calistenia Executável e Correções
+
+- [x] Corrigir sistema de personalização de cores (não aplica corretamente)
+- [x] Remover aba de Progresso Semanal do menu e da Home
+- [x] Salvar treinos gerados pela Calistenia no perfil do usuário
+- [x] Salvar treinos adaptados pelo Copiar Treino no perfil do usuário
+- [x] Histórico de treinos copiados (nome do atleta, data, link do vídeo)
+- [x] Execução de treino de calistenia com timer de descanso e registro de séries

@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Dumbbell, Home, Zap, Clock, Target, RefreshCw, Copy, Check } from "lucide-react";
+import { ArrowLeft, Dumbbell, Home, Zap, Clock, Target, RefreshCw, Copy, Check, BookmarkPlus, Bookmark, Play } from "lucide-react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
+import ExecutarCalistenia from "./ExecutarCalistenia";
 
 const FOCUS_OPTIONS = [
   { value: "full body", label: "Full Body", emoji: "💪" },
@@ -37,8 +38,31 @@ export default function Calistenia() {
   const [difficulty, setDifficulty] = useState<"iniciante" | "intermediario" | "avancado">("intermediario");
   const [result, setResult] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [executing, setExecuting] = useState(false);
 
   const { data: anamnese } = trpc.anamnese.getMy.useQuery();
+
+  const saveMutation = trpc.savedWorkouts.save.useMutation({
+    onSuccess: () => {
+      setSaved(true);
+      toast.success("Treino salvo no seu perfil!");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleSave = () => {
+    if (!result) return;
+    const focusLabel = FOCUS_OPTIONS.find(f => f.value === focus)?.label || focus;
+    saveMutation.mutate({
+      type: "calistenia",
+      title: `Calistenia ${focusLabel} — ${duration}min (${difficulty})`,
+      content: result,
+      focus,
+      duration,
+      difficulty,
+    });
+  };
 
   const generateMutation = trpc.calistenia.generate.useMutation({
     onSuccess: (data) => {
@@ -51,8 +75,21 @@ export default function Calistenia() {
   });
 
   const handleGenerate = () => {
+    setSaved(false);
+    setExecuting(false);
     generateMutation.mutate({ focus, duration, difficulty });
   };
+
+  if (executing && result) {
+    const focusLabel = FOCUS_OPTIONS.find(f => f.value === focus)?.label || focus;
+    return (
+      <ExecutarCalistenia
+        workoutContent={result}
+        workoutTitle={`Calistenia ${focusLabel}`}
+        onFinish={() => setExecuting(false)}
+      />
+    );
+  }
 
   const handleCopy = async () => {
     if (!result) return;
@@ -250,17 +287,38 @@ export default function Calistenia() {
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <Streamdown>{result}</Streamdown>
               </div>
-              <div className="mt-6 pt-4 border-t border-border flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={handleGenerate}
-                  disabled={generateMutation.isPending}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Gerar outro
-                </Button>
-              </div>
+                <div className="mt-6 pt-4 border-t border-border space-y-2">
+                  <Button
+                    className="w-full h-12 text-base"
+                    onClick={() => setExecuting(true)}
+                  >
+                    <Play className="w-5 h-5 mr-2" />
+                    Iniciar Treino
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={handleGenerate}
+                      disabled={generateMutation.isPending}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Gerar outro
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={handleSave}
+                      disabled={saveMutation.isPending || saved}
+                    >
+                      {saved ? (
+                        <><Bookmark className="w-4 h-4 mr-2 fill-current" />Salvo!</>
+                      ) : (
+                        <><BookmarkPlus className="w-4 h-4 mr-2" />Salvar</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
             </CardContent>
           </Card>
         )}

@@ -277,3 +277,26 @@ export const workoutSessions = mysqlTable("workout_sessions", {
 });
 export type WorkoutSession = typeof workoutSessions.$inferSelect;
 export type InsertWorkoutSession = typeof workoutSessions.$inferInsert;
+
+/**
+ * Treinos gerados por IA (calistenia e copiados de vídeos)
+ */
+export const savedAiWorkouts = mysqlTable("saved_ai_workouts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  type: mysqlEnum("type", ["calistenia", "copied"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(), // markdown do treino gerado
+  // Para treinos copiados
+  athleteName: varchar("athleteName", { length: 255 }),
+  videoUrl: varchar("videoUrl", { length: 512 }),
+  videoAnalysis: text("videoAnalysis"), // análise bruta do vídeo
+  // Para treinos de calistenia
+  focus: varchar("focus", { length: 100 }),
+  duration: int("duration"),
+  difficulty: varchar("difficulty", { length: 50 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SavedAiWorkout = typeof savedAiWorkouts.$inferSelect;
+export type InsertSavedAiWorkout = typeof savedAiWorkouts.$inferInsert;

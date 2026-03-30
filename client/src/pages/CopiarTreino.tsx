@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Video, Zap, RefreshCw, Copy, Check, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { ArrowLeft, Video, Zap, RefreshCw, Copy, Check, ChevronDown, ChevronUp, ExternalLink, BookmarkPlus, Bookmark } from "lucide-react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -41,8 +41,30 @@ export default function CopiarTreino() {
   const [result, setResult] = useState<{ videoAnalysis: string; adaptedWorkout: string; athleteName?: string } | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const { data: anamnese } = trpc.anamnese.getMy.useQuery();
+
+  const saveMutation = trpc.savedWorkouts.save.useMutation({
+    onSuccess: () => {
+      setSaved(true);
+      toast.success("Treino salvo no seu perfil!");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleSave = () => {
+    if (!result) return;
+    const name = result.athleteName || athleteName || "Atleta";
+    saveMutation.mutate({
+      type: "copied",
+      title: `Treino de ${name}`,
+      content: result.adaptedWorkout,
+      athleteName: name,
+      videoUrl: videoUrl.trim(),
+      videoAnalysis: result.videoAnalysis,
+    });
+  };
 
   const copyMutation = trpc.copiarTreino.fromVideo.useMutation({
     onSuccess: (data) => {
@@ -66,6 +88,7 @@ export default function CopiarTreino() {
       toast.error("Cole a URL do vídeo primeiro");
       return;
     }
+    setSaved(false);
     copyMutation.mutate({
       videoUrl: videoUrl.trim(),
       athleteName: athleteName.trim() || undefined,
@@ -313,20 +336,34 @@ export default function CopiarTreino() {
               )}
             </Card>
 
-            {/* Botão para novo treino */}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setResult(null);
-                setVideoUrl("");
-                setAthleteName("");
-                setAdditionalContext("");
-              }}
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Analisar outro vídeo
-            </Button>
+            {/* Botões de ação */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setResult(null);
+                  setVideoUrl("");
+                  setAthleteName("");
+                  setAdditionalContext("");
+                  setSaved(false);
+                }}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Analisar outro
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSave}
+                disabled={saveMutation.isPending || saved}
+              >
+                {saved ? (
+                  <><Bookmark className="w-4 h-4 mr-2 fill-current" />Salvo!</>
+                ) : (
+                  <><BookmarkPlus className="w-4 h-4 mr-2" />Salvar treino</>
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
