@@ -349,6 +349,176 @@ Formate a resposta em Markdown com seções claras e bem organizadas.`;
       }),
   }),
 
+  // Calistenia — treinos em casa gerados por IA
+  calistenia: router({
+    generate: protectedProcedure
+      .input(z.object({
+        focus: z.string().optional(), // ex: "peito", "pernas", "full body"
+        duration: z.number().optional(), // minutos disponíveis
+        difficulty: z.enum(["iniciante", "intermediario", "avancado"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const anamnese = await db.getAnamneseByUserId(ctx.user.id);
+        if (!anamnese) {
+          throw new Error("Preencha sua anamnese antes de gerar um treino de calistenia.");
+        }
+
+        const { invokeLLM } = await import("./_core/llm");
+
+        const focusText = input.focus ? `Foco do treino: ${input.focus}` : "Treino full body";
+        const durationText = input.duration ? `${input.duration} minutos` : anamnese.sessionDuration || "60 minutos";
+        const difficultyText = input.difficulty || (anamnese.trainingExperience?.toLowerCase().includes("iniciante") ? "iniciante" : "intermediario");
+
+        const prompt = `Você é um especialista em calistenia e treino funcional. Crie um treino de calistenia completo para ser feito EM CASA, sem equipamentos (ou com itens básicos como barra de porta e elástico).
+
+DADOS DO ALUNO:
+- Idade: ${anamnese.age} anos
+- Gênero: ${anamnese.gender}
+- Peso: ${anamnese.currentWeight} kg
+- Objetivo principal: ${anamnese.primaryGoal}
+- Experiência: ${anamnese.trainingExperience}
+- Lesões/restrições: ${anamnese.previousInjuries || "Nenhuma"}
+- Restrições médicas: ${anamnese.medicalRestrictions || "Nenhuma"}
+- Exercícios a evitar: ${anamnese.exerciseRestrictions || "Nenhum"}
+
+PARÂMETROS DO TREINO:
+- ${focusText}
+- Duração: ${durationText}
+- Nível de dificuldade: ${difficultyText}
+
+Crie um treino de calistenia detalhado com:
+1. Nome do treino e objetivo
+2. Aquecimento (5-10 min): 3-4 exercícios com duração/repetições
+3. Bloco principal (${durationText}): 6-10 exercícios organizados em blocos ou circuitos
+   - Para cada exercício: nome, séries/repetições ou tempo, descanso, descrição da execução correta
+   - Variações mais fáceis e mais difíceis de cada exercício
+4. Desaquecimento/alongamento (5 min)
+5. Dicas de progressão: como avançar o treino nas próximas semanas
+6. Frequência recomendada por semana
+
+Formate em Markdown com seções claras. Use emojis para deixar mais visual e motivador.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Você é um especialista em calistenia, treino funcional e bodyweight training. Crie treinos seguros, progressivos e adaptados ao nível do aluno." },
+            { role: "user", content: prompt },
+          ],
+        });
+
+        return {
+          success: true,
+          workoutPlan: response.choices[0]?.message?.content || "Erro ao gerar treino",
+          params: { focus: input.focus, duration: input.duration, difficulty: difficultyText },
+        };
+      }),
+  }),
+
+  // Copiar Treino — analisa vídeo de rotina de atleta e adapta à anamnese
+  copiarTreino: router({
+    fromVideo: protectedProcedure
+      .input(z.object({
+        videoUrl: z.string().url(),
+        athleteName: z.string().optional(),
+        additionalContext: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const anamnese = await db.getAnamneseByUserId(ctx.user.id);
+        if (!anamnese) {
+          throw new Error("Preencha sua anamnese antes de copiar um treino.");
+        }
+
+        const { invokeLLM } = await import("./_core/llm");
+
+        // Primeiro: analisar o vídeo para extrair a rotina de treino
+        const videoAnalysisResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: "Você é um especialista em análise de treinos de atletas e fisiculturistas. Sua tarefa é extrair informações detalhadas sobre rotinas de treino a partir de vídeos."
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Analise este vídeo de treino${input.athleteName ? ` do(a) ${input.athleteName}` : ""} e extraia:
+1. Todos os exercícios realizados (nome, séries, repetições, carga se visível)
+2. Grupos musculares trabalhados
+3. Ordem dos exercícios
+4. Técnicas especiais utilizadas (drop set, super set, etc)
+5. Tempo de descanso estimado
+6. Intensidade geral do treino
+7. Qualquer dica ou observação relevante mencionada
+
+Contexto adicional: ${input.additionalContext || "Nenhum"}
+
+Formate a análise de forma estruturada e detalhada.`
+                },
+                {
+                  type: "file_url" as const,
+                  file_url: {
+                    url: input.videoUrl,
+                    mime_type: "video/mp4" as const
+                  }
+                }
+              ]
+            }
+          ],
+        });
+
+        const videoAnalysis = videoAnalysisResponse.choices[0]?.message?.content || "";
+
+        // Segundo: adaptar o treino extraído à anamnese do usuário
+        const adaptationPrompt = `Você é um personal trainer experiente. Analise a rotina de treino extraída de um vídeo e adapte-a para o aluno abaixo, respeitando suas limitações e objetivos.
+
+ROTINA ORIGINAL EXTRAÍDA DO VÍDEO:
+${videoAnalysis}
+
+DADOS DO ALUNO:
+- Idade: ${anamnese.age} anos
+- Gênero: ${anamnese.gender}
+- Peso: ${anamnese.currentWeight} kg
+- Objetivo principal: ${anamnese.primaryGoal}
+- Experiência: ${anamnese.trainingExperience}
+- Lesões/restrições: ${anamnese.previousInjuries || "Nenhuma"}
+- Restrições médicas: ${anamnese.medicalRestrictions || "Nenhuma"}
+- Exercícios a evitar: ${anamnese.exerciseRestrictions || "Nenhum"}
+- Duração disponível: ${anamnese.sessionDuration || "60 minutos"}
+- Nível de atividade: ${anamnese.activityLevel}
+
+Crie uma versão adaptada da rotina que:
+1. Mantenha a essência e estrutura do treino original
+2. Substitua exercícios inadequados por alternativas seguras para o aluno
+3. Ajuste volume (séries/repetições) ao nível de experiência
+4. Ajuste cargas iniciais sugeridas ao perfil do aluno
+5. Indique quais exercícios foram mantidos, modificados ou substituídos e por quê
+6. Adicione progressão sugerida para as próximas 4 semanas
+
+Formate em Markdown com:
+- Seção "Análise do Treino Original" (resumo do que foi extraído)
+- Seção "Treino Adaptado" (versão personalizada)
+- Seção "Modificações Realizadas" (o que mudou e por quê)
+- Seção "Progressão Sugerida" (como evoluir)
+
+Use emojis para tornar mais visual.`;
+
+        const adaptationResponse = await invokeLLM({
+          messages: [
+            { role: "system", content: "Você é um personal trainer especializado em adaptar treinos de atletas de alto nível para praticantes comuns, respeitando limitações individuais." },
+            { role: "user", content: adaptationPrompt },
+          ],
+        });
+
+        return {
+          success: true,
+          videoAnalysis,
+          adaptedWorkout: adaptationResponse.choices[0]?.message?.content || "Erro ao adaptar treino",
+          athleteName: input.athleteName,
+          videoUrl: input.videoUrl,
+        };
+      }),
+  }),
+
   // Achievements
   achievements: router({
     getAll: publicProcedure.query(async () => {

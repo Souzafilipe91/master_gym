@@ -280,3 +280,12 @@
 - [x] Personalização completa: seletor de cor com círculo cromático
 - [x] Corrigir ícone do app que parou de aparecer
 - [x] Corrigir personalização customizada — usuário não consegue alterar cores
+
+## Novas Funcionalidades — Calistenia e Copiar Treino
+
+- [x] Criar página Calistenia com gerador de treino em casa via IA baseado na anamnese
+- [x] Criar backend: rota tRPC generateCalisthenicsWorkout
+- [x] Criar página Copiar Treino com input de URL de vídeo (YouTube)
+- [x] Criar backend: rota tRPC copyWorkoutFromVideo que analisa vídeo e gera treino
+- [x] Adicionar links no menu lateral para Calistenia e Copiar Treino
+- [x] Escrever testes para as novas rotas

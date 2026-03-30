@@ -15,7 +15,9 @@ import {
   LineChart,
   Calculator,
   Settings,
-  Palette
+  Palette,
+  Home,
+  Video
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -76,6 +78,16 @@ const menuItems = [
     title: "Conquistas",
     href: "/conquistas",
     icon: Trophy,
+  },
+  {
+    title: "Calistenia",
+    href: "/calistenia",
+    icon: Home,
+  },
+  {
+    title: "Copiar Treino",
+    href: "/copiar-treino",
+    icon: Video,
   },
   {
     title: "Configurações",
