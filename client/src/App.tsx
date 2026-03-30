@@ -24,6 +24,7 @@ import Personalizacao from "./pages/Personalizacao";
 import Calistenia from "./pages/Calistenia";
 import TreinosSalvos from "./pages/TreinosSalvos";
 import CopiarTreino from "./pages/CopiarTreino";
+import ExecutarTreinoIA from "./pages/ExecutarTreinoIA";
 import { LockScreenWidgetManager } from "./components/LockScreenWidgetManager";
 
 function Router() {
@@ -51,6 +52,7 @@ function Router() {
         <Route path={"/calistenia"} component={Calistenia} />
         <Route path={"/copiar-treino"} component={CopiarTreino} />
         <Route path={"/treinos-salvos"} component={TreinosSalvos} />
+        <Route path={"/treino-ia/:id/executar"} component={ExecutarTreinoIA} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

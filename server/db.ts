@@ -404,8 +404,17 @@ export async function unlockAchievement(userId: number, achievementId: number) {
 export async function saveAiWorkout(data: InsertSavedAiWorkout) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(savedAiWorkouts).values(data);
-  return result;
+  const [result] = await db.insert(savedAiWorkouts).values(data).$returningId();
+  return { id: result.id };
+}
+
+export async function getSavedAiWorkoutById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [workout] = await db.select().from(savedAiWorkouts)
+    .where(and(eq(savedAiWorkouts.id, id), eq(savedAiWorkouts.userId, userId)))
+    .limit(1);
+  return workout ?? null;
 }
 
 export async function getSavedAiWorkouts(userId: number, type?: "calistenia" | "copied" | "musculacao") {
@@ -418,14 +427,6 @@ export async function getSavedAiWorkouts(userId: number, type?: "calistenia" | "
     .orderBy(desc(savedAiWorkouts.createdAt));
 }
 
-export async function getSavedAiWorkoutById(id: number, userId: number) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(savedAiWorkouts)
-    .where(and(eq(savedAiWorkouts.id, id), eq(savedAiWorkouts.userId, userId)))
-    .limit(1);
-  return result[0] || null;
-}
 
 export async function deleteSavedAiWorkout(id: number, userId: number) {
   const db = await getDb();

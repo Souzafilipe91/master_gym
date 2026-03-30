@@ -3,11 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Dumbbell, Home, Zap, Clock, Target, RefreshCw, Copy, Check, BookmarkPlus, Bookmark, Play } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
-import ExecutarCalistenia from "./ExecutarCalistenia";
 
 const FOCUS_OPTIONS = [
   { value: "full body", label: "Full Body", emoji: "💪" },
@@ -39,14 +38,16 @@ export default function Calistenia() {
   const [result, setResult] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [executing, setExecuting] = useState(false);
+  const [savedId, setSavedId] = useState<number | null>(null);
+  const [, navigate] = useLocation();
 
   const { data: anamnese } = trpc.anamnese.getMy.useQuery();
 
   const saveMutation = trpc.savedWorkouts.save.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSaved(true);
-      toast.success("Treino salvo no seu perfil!");
+      setSavedId(data.id);
+      toast.success("Treino salvo! Acesse em Meus Treinos.");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -76,20 +77,9 @@ export default function Calistenia() {
 
   const handleGenerate = () => {
     setSaved(false);
-    setExecuting(false);
+    setSavedId(null);
     generateMutation.mutate({ focus, duration, difficulty });
   };
-
-  if (executing && result) {
-    const focusLabel = FOCUS_OPTIONS.find(f => f.value === focus)?.label || focus;
-    return (
-      <ExecutarCalistenia
-        workoutContent={result}
-        workoutTitle={`Calistenia ${focusLabel}`}
-        onFinish={() => setExecuting(false)}
-      />
-    );
-  }
 
   const handleCopy = async () => {
     if (!result) return;
@@ -290,10 +280,32 @@ export default function Calistenia() {
                 <div className="mt-6 pt-4 border-t border-border space-y-2">
                   <Button
                     className="w-full h-12 text-base"
-                    onClick={() => setExecuting(true)}
+                    onClick={() => {
+                      if (savedId) {
+                        navigate(`/treino-ia/${savedId}/executar`);
+                      } else {
+                        // Salvar primeiro, depois redirecionar
+                        const focusLabel = FOCUS_OPTIONS.find(f => f.value === focus)?.label || focus;
+                        saveMutation.mutate({
+                          type: "calistenia",
+                          title: `Calistenia ${focusLabel} — ${duration}min (${difficulty})`,
+                          content: result!,
+                          focus,
+                          duration,
+                          difficulty,
+                        }, {
+                          onSuccess: (data) => {
+                            setSaved(true);
+                            setSavedId(data.id);
+                            navigate(`/treino-ia/${data.id}/executar`);
+                          }
+                        });
+                      }
+                    }}
+                    disabled={saveMutation.isPending}
                   >
                     <Play className="w-5 h-5 mr-2" />
-                    Iniciar Treino
+                    {saveMutation.isPending ? "Preparando..." : "Iniciar Treino"}
                   </Button>
                   <div className="flex gap-2">
                     <Button

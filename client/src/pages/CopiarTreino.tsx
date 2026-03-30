@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Video, Zap, RefreshCw, Copy, Check, ChevronDown, ChevronUp, ExternalLink, BookmarkPlus, Bookmark } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowLeft, Video, Zap, RefreshCw, Copy, Check, ChevronDown, ChevronUp, ExternalLink, BookmarkPlus, Bookmark, Play } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
@@ -42,13 +42,16 @@ export default function CopiarTreino() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedId, setSavedId] = useState<number | null>(null);
+  const [, navigate] = useLocation();
 
   const { data: anamnese } = trpc.anamnese.getMy.useQuery();
 
   const saveMutation = trpc.savedWorkouts.save.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSaved(true);
-      toast.success("Treino salvo no seu perfil!");
+      setSavedId(data.id);
+      toast.success("Treino salvo! Acesse em Meus Treinos.");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -364,6 +367,35 @@ export default function CopiarTreino() {
                 )}
               </Button>
             </div>
+            {/* Botão Iniciar Treino */}
+            <Button
+              className="w-full h-12 text-base mt-2"
+              onClick={() => {
+                if (savedId) {
+                  navigate(`/treino-ia/${savedId}/executar`);
+                } else {
+                  const name = result!.athleteName || athleteName || "Atleta";
+                  saveMutation.mutate({
+                    type: "copied",
+                    title: `Treino ${name}`,
+                    content: result!.adaptedWorkout,
+                    athleteName: name,
+                    videoUrl: videoUrl || undefined,
+                    videoAnalysis: result!.videoAnalysis,
+                  }, {
+                    onSuccess: (data) => {
+                      setSaved(true);
+                      setSavedId(data.id);
+                      navigate(`/treino-ia/${data.id}/executar`);
+                    }
+                  });
+                }
+              }}
+              disabled={saveMutation.isPending}
+            >
+              <Play className="w-5 h-5 mr-2" />
+              {saveMutation.isPending ? "Preparando..." : "Iniciar Treino"}
+            </Button>
           </div>
         )}
 

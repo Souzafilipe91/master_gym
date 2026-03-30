@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import {
   Dumbbell, Activity, Loader2, Home, Video, ChevronDown, ChevronUp,
-  Clock, Calendar, Trash2, Eye, Sparkles, BookOpen
+  Clock, Calendar, Trash2, Eye, Sparkles, BookOpen, Play
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
@@ -320,6 +320,7 @@ function AiWorkoutCard({
   highlight?: boolean;
   showAthlete?: boolean;
 }) {
+  const [, navigate] = useLocation();
   const dateStr = new Date(workout.createdAt).toLocaleDateString("pt-BR", {
     day: "2-digit", month: "2-digit", year: "numeric",
   });
@@ -374,6 +375,15 @@ function AiWorkoutCard({
             </Button>
           </div>
         </div>
+        {/* Botão Executar Treino */}
+        <Button
+          className="w-full mt-3"
+          size="sm"
+          onClick={() => navigate(`/treino-ia/${workout.id}/executar`)}
+        >
+          <Play className="w-4 h-4 mr-2" />
+          Executar Treino
+        </Button>
       </CardHeader>
 
       {expanded && (

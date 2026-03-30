@@ -305,8 +305,8 @@
 
 ## Integração Treinos IA → Meus Treinos
 
-- [ ] Treinos gerados por IA (Calistenia, Gerar Treino IA, Copiar Treino) aparecem em Meus Treinos
-- [ ] Mesmo design e fluxo dos treinos do programa (executar, histórico, etc.)
+- [x] Treinos gerados por IA (Calistenia, Gerar Treino IA, Copiar Treino) aparecem em Meus Treinos
+- [x] Mesmo design e fluxo dos treinos do programa (executar, histórico, etc.)
 
 ## Meus Treinos — Partições por Categoria
 
@@ -317,3 +317,11 @@
 - [x] Criar página de detalhes para treinos IA salvos com mesmo design do TreinoDetalhes
 - [x] Remover bloco de notificações de treinos diários do Dashboard
 - [x] Renomear app de "Master Gym / Filipe Treinos" para "Gym Master" em todo o projeto
+- [x] Corrigir erro de runtime na página Calistenia (crash ao abrir)
+- [x] Corrigir salvamento de treinos IA em Meus Treinos (não está salvando)
+
+## Unificação de Treinos
+- [x] Corrigir erro de runtime na Calistenia ao clicar no treino
+- [x] Garantir que treinos IA (musculação, calistenia, cópia) são salvos em Meus Treinos
+- [x] Unificar fluxo: todos os treinos têm card → detalhes → executar com timer
+- [x] Criar ExecutarTreinoIA unificado para calistenia e cópia por vídeo

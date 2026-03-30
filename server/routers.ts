@@ -364,13 +364,18 @@ Formate a resposta em Markdown com seções claras e bem organizadas.`;
         difficulty: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        await db.saveAiWorkout({ userId: ctx.user.id, ...input });
-        return { success: true };
+        const saved = await db.saveAiWorkout({ userId: ctx.user.id, ...input });
+        return { success: true, id: saved.id };
       }),
     getAll: protectedProcedure
       .input(z.object({ type: z.enum(["calistenia", "copied", "musculacao"]).optional() }))
       .query(async ({ ctx, input }) => {
         return await db.getSavedAiWorkouts(ctx.user.id, input.type);
+      }),
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        return await db.getSavedAiWorkoutById(input.id, ctx.user.id);
       }),
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
