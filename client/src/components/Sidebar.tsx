@@ -120,7 +120,7 @@ export function Sidebar({ className }: SidebarProps) {
           </Button>
           <div className="flex items-center gap-2">
             <Dumbbell className="h-5 w-5 text-primary" />
-            <span className="font-bold text-sm">Filipe Treinos</span>
+            <span className="font-bold text-sm">Gym Master</span>
           </div>
           <div className="w-10" /> {/* Spacer para centralizar */}
         </div>
@@ -151,8 +151,8 @@ export function Sidebar({ className }: SidebarProps) {
                   <Dumbbell className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold">Master Gym</h1>
-                  <p className="text-xs text-muted-foreground">Programa de 1 Ano</p>
+                  <h1 className="text-lg font-bold">Gym Master</h1>
+                  <p className="text-xs text-muted-foreground">Seu treino personalizado</p>
                 </div>
               </div>
             </Link>

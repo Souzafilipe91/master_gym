@@ -1,6 +1,6 @@
 {
-  "name": "Filipe Treinos - Programa de 1 Ano",
-  "short_name": "Filipe Treinos",
+  "name": "Gym Master",
+  "short_name": "Gym Master",
   "description": "Plataforma completa de treinos de musculação personalizada com progressão de carga e gerador de treinos com IA",
   "start_url": "/",
   "display": "standalone",

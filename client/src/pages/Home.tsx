@@ -35,7 +35,7 @@ export default function Home() {
               </div>
               <CardTitle className="text-4xl font-bold">
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Filipe Treinos
+                  Gym Master
                 </span>
               </CardTitle>
               <CardDescription className="text-lg">

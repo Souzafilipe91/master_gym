@@ -316,3 +316,4 @@
 - [x] Separar "treino atual" dos "treinos anteriores" dentro de cada seção
 - [x] Criar página de detalhes para treinos IA salvos com mesmo design do TreinoDetalhes
 - [x] Remover bloco de notificações de treinos diários do Dashboard
+- [x] Renomear app de "Master Gym / Filipe Treinos" para "Gym Master" em todo o projeto

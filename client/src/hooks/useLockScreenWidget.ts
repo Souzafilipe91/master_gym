@@ -122,7 +122,7 @@ export function useLockScreenWidget() {
     }
 
     await showLockScreenWidget({
-      title: 'Master Gym',
+      title: 'Gym Master',
       description,
       badge: 7 - workoutsThisWeek, // Mostra quantos treinos faltam
       icon: '/icon-192.png',
