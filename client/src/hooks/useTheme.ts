@@ -3,14 +3,14 @@ import { useState, useEffect, useCallback } from "react";
 export type ThemePreset = "dark-red" | "light-blue" | "eva-unit1" | "custom";
 
 export interface ThemeColors {
-  primary: string;       // oklch
-  primaryFg: string;     // oklch
-  background: string;    // oklch
-  foreground: string;    // oklch
-  card: string;          // oklch
-  sidebar: string;       // oklch
-  accent: string;        // oklch
-  ring: string;          // oklch
+  primary: string;
+  primaryFg: string;
+  background: string;
+  foreground: string;
+  card: string;
+  sidebar: string;
+  accent: string;
+  ring: string;
 }
 
 export interface ThemeConfig {
@@ -70,70 +70,98 @@ export const THEME_PRESETS: ThemeConfig[] = [
 
 const THEME_STORAGE_KEY = "gym-theme-config";
 
-function applyThemeColors(colors: ThemeColors, isDark: boolean) {
+// Derivar cores secundárias com valores absolutos (sem relative color syntax)
+function deriveSecondaryColors(colors: ThemeColors, isDark: boolean): Record<string, string> {
+  // Extrair L do background para calcular variações
+  const bgMatch = colors.background.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+  const bgL = bgMatch ? parseFloat(bgMatch[1]) : (isDark ? 0.12 : 0.98);
+  const bgC = bgMatch ? parseFloat(bgMatch[2]) : 0.005;
+  const bgH = bgMatch ? parseFloat(bgMatch[3]) : 285;
+
+  const step = isDark ? 0.06 : -0.04;
+  const borderStep = isDark ? 0.10 : -0.08;
+  const mutedFgStep = isDark ? 0.35 : -0.35;
+
+  const fgMatch = colors.foreground.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+  const fgL = fgMatch ? parseFloat(fgMatch[1]) : (isDark ? 0.98 : 0.15);
+  const fgC = fgMatch ? parseFloat(fgMatch[2]) : 0.005;
+  const fgH = fgMatch ? parseFloat(fgMatch[3]) : 285;
+
+  const clamp = (v: number, min = 0.02, max = 0.97) => Math.max(min, Math.min(max, v));
+
+  const secondary = `oklch(${clamp(bgL + step).toFixed(3)} ${bgC.toFixed(3)} ${bgH})`;
+  const border = `oklch(${clamp(bgL + borderStep).toFixed(3)} ${bgC.toFixed(3)} ${bgH})`;
+  const mutedFg = `oklch(${clamp(fgL - mutedFgStep).toFixed(3)} ${fgC.toFixed(3)} ${fgH})`;
+
+  const sidebarMatch = colors.sidebar.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+  const sbL = sidebarMatch ? parseFloat(sidebarMatch[1]) : bgL;
+  const sbC = sidebarMatch ? parseFloat(sidebarMatch[2]) : bgC;
+  const sbH = sidebarMatch ? parseFloat(sidebarMatch[3]) : bgH;
+  const sidebarAccent = `oklch(${clamp(sbL + step).toFixed(3)} ${sbC.toFixed(3)} ${sbH})`;
+
+  return {
+    "--secondary": secondary,
+    "--secondary-foreground": colors.foreground,
+    "--muted": secondary,
+    "--muted-foreground": mutedFg,
+    "--border": border,
+    "--input": border,
+    "--card-foreground": colors.foreground,
+    "--popover": colors.card,
+    "--popover-foreground": colors.foreground,
+    "--sidebar-foreground": colors.foreground,
+    "--sidebar-primary": colors.primary,
+    "--sidebar-primary-foreground": colors.primaryFg,
+    "--sidebar-accent": sidebarAccent,
+    "--sidebar-accent-foreground": colors.foreground,
+    "--sidebar-border": border,
+    "--sidebar-ring": colors.ring,
+    "--accent-foreground": colors.primaryFg,
+    "--destructive": isDark ? "oklch(0.65 0.25 25)" : "oklch(0.55 0.22 25)",
+    "--destructive-foreground": "oklch(0.98 0.005 285)",
+  };
+}
+
+export function applyThemeColors(colors: ThemeColors) {
   const root = document.documentElement;
 
-  root.style.setProperty("--primary", colors.primary);
-  root.style.setProperty("--primary-foreground", colors.primaryFg);
-  root.style.setProperty("--background", colors.background);
-  root.style.setProperty("--foreground", colors.foreground);
-  root.style.setProperty("--card", colors.card);
-  root.style.setProperty("--card-foreground", colors.foreground);
-  root.style.setProperty("--popover", colors.card);
-  root.style.setProperty("--popover-foreground", colors.foreground);
-  root.style.setProperty("--sidebar", colors.sidebar);
-  root.style.setProperty("--sidebar-foreground", colors.foreground);
-  root.style.setProperty("--sidebar-primary", colors.primary);
-  root.style.setProperty("--sidebar-primary-foreground", colors.primaryFg);
-  root.style.setProperty("--sidebar-accent", isDark
-    ? `oklch(from ${colors.sidebar} calc(l + 0.06) c h)`
-    : `oklch(from ${colors.sidebar} calc(l - 0.04) c h)`
-  );
-  root.style.setProperty("--sidebar-accent-foreground", colors.foreground);
-  root.style.setProperty("--sidebar-border", isDark
-    ? `oklch(from ${colors.background} calc(l + 0.1) c h)`
-    : `oklch(from ${colors.background} calc(l - 0.08) c h)`
-  );
-  root.style.setProperty("--sidebar-ring", colors.ring);
-  root.style.setProperty("--accent", colors.accent);
-  root.style.setProperty("--accent-foreground", colors.primaryFg);
-  root.style.setProperty("--ring", colors.ring);
-  root.style.setProperty("--secondary", isDark
-    ? `oklch(from ${colors.background} calc(l + 0.06) c h)`
-    : `oklch(from ${colors.background} calc(l - 0.04) c h)`
-  );
-  root.style.setProperty("--secondary-foreground", colors.foreground);
-  root.style.setProperty("--muted", isDark
-    ? `oklch(from ${colors.background} calc(l + 0.06) c h)`
-    : `oklch(from ${colors.background} calc(l - 0.04) c h)`
-  );
-  root.style.setProperty("--muted-foreground", isDark
-    ? `oklch(from ${colors.foreground} calc(l - 0.35) c h)`
-    : `oklch(from ${colors.foreground} calc(l + 0.35) c h)`
-  );
-  root.style.setProperty("--border", isDark
-    ? `oklch(from ${colors.background} calc(l + 0.1) c h)`
-    : `oklch(from ${colors.background} calc(l - 0.08) c h)`
-  );
-  root.style.setProperty("--input", isDark
-    ? `oklch(from ${colors.background} calc(l + 0.1) c h)`
-    : `oklch(from ${colors.background} calc(l - 0.08) c h)`
-  );
+  // Detectar se é tema escuro
+  const bgMatch = colors.background.match(/oklch\(([\d.]+)/);
+  const isDark = bgMatch ? parseFloat(bgMatch[1]) <= 0.5 : true;
 
-  // Atualizar classe dark/light no html
+  // Aplicar cores principais
+  const primary: Record<string, string> = {
+    "--primary": colors.primary,
+    "--primary-foreground": colors.primaryFg,
+    "--background": colors.background,
+    "--foreground": colors.foreground,
+    "--card": colors.card,
+    "--sidebar": colors.sidebar,
+    "--accent": colors.accent,
+    "--ring": colors.ring,
+  };
+
+  for (const [key, val] of Object.entries(primary)) {
+    root.style.setProperty(key, val);
+  }
+
+  // Aplicar cores derivadas (valores absolutos, sem relative color syntax)
+  const derived = deriveSecondaryColors(colors, isDark);
+  for (const [key, val] of Object.entries(derived)) {
+    root.style.setProperty(key, val);
+  }
+
+  // Gerenciar classe dark/light
   if (isDark) {
-    document.documentElement.classList.add("dark");
+    root.classList.add("dark");
   } else {
-    document.documentElement.classList.remove("dark");
+    root.classList.remove("dark");
   }
 }
 
 function isLightBackground(background: string): boolean {
-  // Verifica se o L (lightness) em oklch é > 0.5
   const match = background.match(/oklch\(([\d.]+)/);
-  if (match) {
-    return parseFloat(match[1]) > 0.5;
-  }
+  if (match) return parseFloat(match[1]) > 0.5;
   return false;
 }
 
@@ -151,12 +179,10 @@ export function useTheme() {
         if (config.customColors) {
           setCustomColors(config.customColors);
         }
-        // Aplicar imediatamente
         const colors = config.preset === "custom" && config.customColors
           ? config.customColors
-          : THEME_PRESETS.find(t => t.id === config.preset)?.colors || THEME_PRESETS[0].colors;
-        const isDark = !isLightBackground(colors.background);
-        applyThemeColors(colors, isDark);
+          : THEME_PRESETS.find((t) => t.id === config.preset)?.colors || THEME_PRESETS[0].colors;
+        applyThemeColors(colors);
       } catch (e) {
         console.error("Erro ao carregar tema:", e);
       }
@@ -164,17 +190,15 @@ export function useTheme() {
   }, []);
 
   const applyPreset = useCallback((presetId: ThemePreset) => {
-    const preset = THEME_PRESETS.find(t => t.id === presetId);
+    const preset = THEME_PRESETS.find((t) => t.id === presetId);
     if (!preset) return;
-    const isDark = !isLightBackground(preset.colors.background);
-    applyThemeColors(preset.colors, isDark);
+    applyThemeColors(preset.colors);
     setActivePreset(presetId);
     localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ preset: presetId }));
   }, []);
 
   const applyCustom = useCallback((colors: ThemeColors) => {
-    const isDark = !isLightBackground(colors.background);
-    applyThemeColors(colors, isDark);
+    applyThemeColors(colors);
     setActivePreset("custom");
     setCustomColors(colors);
     localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ preset: "custom", customColors: colors }));
@@ -182,8 +206,10 @@ export function useTheme() {
 
   const getCurrentColors = useCallback((): ThemeColors => {
     if (activePreset === "custom" && customColors) return customColors;
-    return THEME_PRESETS.find(t => t.id === activePreset)?.colors || THEME_PRESETS[0].colors;
+    return THEME_PRESETS.find((t) => t.id === activePreset)?.colors || THEME_PRESETS[0].colors;
   }, [activePreset, customColors]);
 
   return { activePreset, customColors, applyPreset, applyCustom, getCurrentColors };
 }
+
+export { isLightBackground };

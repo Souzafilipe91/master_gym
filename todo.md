@@ -298,3 +298,7 @@
 - [x] Salvar treinos adaptados pelo Copiar Treino no perfil do usuário
 - [x] Histórico de treinos copiados (nome do atleta, data, link do vídeo)
 - [x] Execução de treino de calistenia com timer de descanso e registro de séries
+
+## Bug — Personalização de Cores
+
+- [x] Corrigir definitivamente: cores customizadas não são aplicadas visualmente no app
