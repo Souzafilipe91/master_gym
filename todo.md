@@ -336,3 +336,7 @@
 - [x] Adicionar botão "Como fazer" com descrição detalhada de execução em cada exercício
 - [x] Atualizar prompts do LLM (musculação, calistenia, copiar treino) para formato estruturado com ### e Execução
 - [x] Resetar descrição expandida ao avançar para próximo exercício
+
+## Fallback de Descrições de Exercícios
+- [x] Criar banco de descrições pré-definidas para exercícios conhecidos
+- [x] Aplicar como fallback no ExecutarTreinoIA quando treino não tem descrição própria
