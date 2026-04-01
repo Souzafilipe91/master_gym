@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   ArrowLeft, Check, Clock, Dumbbell, SkipForward,
-  Trophy, TrendingUp, Settings, List, ChevronRight, Play
+  Trophy, TrendingUp, Settings, List, ChevronRight, Play, ChevronDown, ChevronUp, Info
 } from "lucide-react";
 import { useParams, useLocation } from "wouter";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ interface AIExercise {
   reps: string;
   rest: number; // segundos
   notes?: string;
+  description?: string; // como executar o exercício
 }
 
 interface ParsedWorkout {
@@ -29,44 +30,195 @@ interface ParsedWorkout {
 }
 
 function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
-  const lines = markdown.split("\n").map(l => l.trim()).filter(Boolean);
+  const lines = markdown.split("\n").map(l => l.trim());
   const exercises: AIExercise[] = [];
   let title = "Treino";
 
-  for (const line of lines) {
-    if (line.startsWith("# ")) {
-      title = line.replace(/^#\s+/, "");
-      continue;
+  // Extrair título
+  const titleLine = lines.find(l => l.startsWith("# "));
+  if (titleLine) title = titleLine.replace(/^#\s+/, "").replace(/[*_]/g, "").trim();
+
+  // Estratégia 1: blocos de exercício com nome em linha separada seguido de séries
+  // Detecta padrões como:
+  //   ### 1. Agachamento Livre
+  //   **Séries:** 4 | **Reps:** 8-12 | **Descanso:** 90s
+  //   **Execução:** ...
+  // ou:
+  //   - **Flexão de Braço** — 3x12, descanso 60s
+  //   *Como fazer: ...*
+
+  const rawText = markdown;
+  
+  // Regex para capturar blocos de exercício no formato estruturado
+  // Padrão 1: ### N. Nome do Exercício (cabeçalho de nível 2 ou 3)
+  const headerBlockRegex = /#{2,4}\s*(?:\d+\.?\s*)?([^\n#]+)\n([\s\S]*?)(?=#{2,4}|$)/g;
+  let headerMatch;
+  const headerExercises: AIExercise[] = [];
+  
+  while ((headerMatch = headerBlockRegex.exec(rawText)) !== null) {
+    const blockName = headerMatch[1].replace(/[*_`]/g, "").trim();
+    const blockContent = headerMatch[2];
+    
+    // Ignorar seções que não são exercícios (aquecimento, cardio, etc. como títulos de seção)
+    if (/^(treino|programa|semana|ciclo|dia|bloco|fase|cardio|nutrição|dica|observ|recom|progres)/i.test(blockName)) continue;
+    if (blockName.length > 60) continue; // nome muito longo provavelmente não é exercício
+    
+    // Buscar séries x reps no bloco
+    // Padrão 1: **Séries:** N | **Reps:** N (formato estruturado do prompt)
+    const boldSetsRepsMatch = blockContent.match(/\*\*S.ries:\*\*\s*(\d+)[^\n]*\*\*Reps:\*\*\s*([\d\-–]+)/i);
+    // Padrão 2: NxN
+    const inlineMatch = blockContent.match(/(\d+)\s*[xX×]\s*([\d\-–]+)/i);
+    // Padrão 3: S.ries: N ... Reps: N (sem bold)
+    const plainMatch = blockContent.match(/S.ries?[*:\s]+(\d+)[^\n]*Reps?[*:\s]+([\d\-–]+)/i);
+    
+    const setsRepsMatch = boldSetsRepsMatch || inlineMatch || plainMatch;
+    if (!setsRepsMatch) continue;
+    
+    const sets = parseInt(setsRepsMatch[1]) || 3;
+    const reps = setsRepsMatch[2].replace(/\s*(reps?|repetições?)/i, "").trim();
+    
+    // Buscar tempo de descanso
+    // Padrão: **Descanso:** 60s ou descanso 60s ou descanso: 2min
+    const restMatch = blockContent.match(/Descanso[^0-9]*(\d+)\s*(s|seg|min|minuto)/i);
+    let rest = 90;
+    if (restMatch) {
+      rest = restMatch[2].toLowerCase().startsWith("min")
+        ? parseInt(restMatch[1]) * 60
+        : parseInt(restMatch[1]);
     }
-    // Detecta padrões como "- **Flexão**: 3x12" ou "**Agachamento**: 4x15"
-    const exerciseMatch = line.match(/[-*]?\s*\*{1,2}([^*:]+)\*{0,2}[:\s]+(\d+)\s*[xX×]\s*([^\s,.(]+)/i);
+    
+    // Buscar descrição de execução
+    // Padrão: **Execução:** texto (bold) ou Execução: texto (plain)
+    const descMatch = blockContent.match(/Execu..o:\*{0,2}\s*([^\n]+)/i)
+      || blockContent.match(/Como fazer:\*{0,2}\s*([^\n]+)/i)
+      || blockContent.match(/T.cnica:\*{0,2}\s*([^\n]+)/i);
+    const description = descMatch ? descMatch[1].replace(/[*_]/g, "").trim() : undefined;
+    
+    // Buscar notas/dicas
+    const notesMatch = blockContent.match(/Dica:\*{0,2}\s*([^\n]+)/i)
+      || blockContent.match(/Observa..o:\*{0,2}\s*([^\n]+)/i);
+    const notes = notesMatch ? notesMatch[1].replace(/[*_]/g, "").trim() : undefined;
+    
+    headerExercises.push({ name: blockName, sets, reps, rest, description, notes });
+  }
+  
+  if (headerExercises.length >= 3) {
+    return { title, exercises: headerExercises };
+  }
+  
+  // Estratégia 2: linha única com padrão "- **Nome**: 3x12"
+  const lineExercises: AIExercise[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+    
+    // Padrão: bullet com nome em negrito seguido de séries
+    const exerciseMatch = line.match(/^[-*•]?\s*\*{1,2}([^*:]{3,40})\*{0,2}[:\s—–-]+(?:[^\d]*(\d+)\s*[xX×]\s*([\d\-–]+))/i)
+      || line.match(/^(?:\d+\.\s+)\*{1,2}([^*:]{3,40})\*{0,2}[:\s—–-]+(?:[^\d]*(\d+)\s*[xX×]\s*([\d\-–]+))/i)
+      || line.match(/^[-*•]?\s*([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÈÌÒÙÇ][a-záéíóúâêîôûãõàèìòùç\s]{3,35})[:\s—–-]+(\d+)\s*[xX×]\s*([\d\-–]+)/i);
+    
     if (exerciseMatch) {
-      const name = exerciseMatch[1].trim();
+      const name = exerciseMatch[1].replace(/[*_]/g, "").trim();
       const sets = parseInt(exerciseMatch[2]) || 3;
       const reps = exerciseMatch[3].trim();
+      
       const restMatch = line.match(/descanso[:\s]+(\d+)\s*(s|seg|min|minuto)/i);
-      let rest = 60;
+      let rest = 90;
       if (restMatch) {
         rest = restMatch[2].toLowerCase().startsWith("min")
           ? parseInt(restMatch[1]) * 60
           : parseInt(restMatch[1]);
       }
-      exercises.push({ name, sets, reps, rest });
+      
+      // Verificar se a próxima linha tem descrição
+      let description: string | undefined;
+      let notes: string | undefined;
+      for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+        const nextLine = lines[j];
+        if (!nextLine) break;
+        if (/^[-*•#]/.test(nextLine) && !/^[*_]/.test(nextLine)) break;
+        const descMatch = nextLine.match(/(?:[Ee]xecu[çc][ãa]o|[Cc]omo fazer|[Tt]écnica)[:\s]+(.+)/i)
+          || nextLine.match(/^\*([^*]{20,})\*$/)
+          || nextLine.match(/^_([^_]{20,})_$/);
+        if (descMatch) { description = descMatch[1].replace(/[*_]/g, "").trim(); break; }
+        const noteMatch = nextLine.match(/(?:[Oo]bserva[çc][ãa]o|[Dd]ica|[Nn]ota)[:\s]+(.+)/i);
+        if (noteMatch) { notes = noteMatch[1].replace(/[*_]/g, "").trim(); break; }
+      }
+      
+      lineExercises.push({ name, sets, reps, rest, description, notes });
     }
   }
-
-  // Fallback se não parseou nada
-  if (exercises.length === 0) {
-    const genericNames = [
-      "Aquecimento", "Exercício 1", "Exercício 2",
-      "Exercício 3", "Exercício 4", "Alongamento"
-    ];
-    genericNames.forEach((name, i) => {
-      exercises.push({ name, sets: i === 0 || i === genericNames.length - 1 ? 1 : 3, reps: "10-12", rest: 60 });
-    });
+  
+  if (lineExercises.length >= 3) {
+    return { title, exercises: lineExercises };
+  }
+  
+  // Estratégia 3: qualquer linha com padrão NxN após um nome
+  const fallbackExercises: AIExercise[] = [];
+  for (const line of lines) {
+    const m = line.match(/([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÀÈÌÒÙÇ][\wáéíóúâêîôûãõàèìòùç\s]{2,35})\s+(\d+)\s*[xX×]\s*([\d\-–]+)/i);
+    if (m) {
+      const name = m[1].replace(/[*_#-]/g, "").trim();
+      if (name.length < 3 || /^(treino|programa|semana|ciclo|dia|bloco)/i.test(name)) continue;
+      const sets = parseInt(m[2]) || 3;
+      const reps = m[3].trim();
+      const restMatch = line.match(/descanso[:\s]+(\d+)\s*(s|seg|min|minuto)/i);
+      let rest = 90;
+      if (restMatch) {
+        rest = restMatch[2].toLowerCase().startsWith("min")
+          ? parseInt(restMatch[1]) * 60
+          : parseInt(restMatch[1]);
+      }
+      fallbackExercises.push({ name, sets, reps, rest });
+    }
+  }
+  
+  if (fallbackExercises.length >= 2) {
+    return { title, exercises: fallbackExercises };
   }
 
-  return { title, exercises };
+  // Último recurso: extrair qualquer nome de exercício conhecido
+  const knownExercises = [
+    "Agachamento", "Supino", "Remada", "Desenvolvimento", "Rosca", "Tríceps",
+    "Leg Press", "Cadeira Extensora", "Mesa Flexora", "Elevação Lateral",
+    "Puxada", "Barra Fixa", "Flexão", "Afundo", "Stiff", "Levantamento",
+    "Crucifixo", "Voador", "Pulldown", "Serrote", "Prancha", "Abdominal",
+    "Burpee", "Polichinelo", "Corrida", "Aquecimento", "Alongamento"
+  ];
+  const foundExercises: AIExercise[] = [];
+  for (const line of lines) {
+    for (const ex of knownExercises) {
+      if (line.toLowerCase().includes(ex.toLowerCase())) {
+        const setsMatch = line.match(/(\d+)\s*[xX×]\s*([\d\-–]+)/);
+        if (setsMatch) {
+          foundExercises.push({
+            name: ex,
+            sets: parseInt(setsMatch[1]) || 3,
+            reps: setsMatch[2],
+            rest: 90
+          });
+          break;
+        }
+      }
+    }
+  }
+  
+  if (foundExercises.length >= 2) {
+    return { title, exercises: foundExercises };
+  }
+
+  // Fallback absoluto
+  return {
+    title,
+    exercises: [
+      { name: "Aquecimento", sets: 1, reps: "5-10min", rest: 30 },
+      { name: "Exercício Principal 1", sets: 3, reps: "10-12", rest: 90 },
+      { name: "Exercício Principal 2", sets: 3, reps: "10-12", rest: 90 },
+      { name: "Exercício Auxiliar", sets: 3, reps: "12-15", rest: 60 },
+      { name: "Alongamento", sets: 1, reps: "5-10min", rest: 30 },
+    ]
+  };
 }
 
 function getRestTimeFromSettings(defaultSeconds: number): number {
@@ -101,6 +253,7 @@ export default function ExecutarTreinoIA() {
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const [finished, setFinished] = useState(false);
   const [showExerciseList, setShowExerciseList] = useState(false);
+  const [showDescription, setShowDescription] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Solicitar permissão de notificação ao montar
@@ -196,6 +349,7 @@ export default function ExecutarTreinoIA() {
     if (isLastSet) {
       setCurrentExIdx(prev => prev + 1);
       setCurrentSet(1);
+      setShowDescription(false);
       haptic.success();
     } else {
       setCurrentSet(prev => prev + 1);
@@ -379,7 +533,7 @@ export default function ExecutarTreinoIA() {
                   </div>
                 </div>
                 {/* Indicador visual de séries */}
-                <div className="flex gap-2 mt-3 ml-10">
+                <div className="flex gap-2 mt-3 ml-10 flex-wrap">
                   {Array.from({ length: currentExercise.sets }, (_, i) => {
                     const setNum = i + 1;
                     const isDone = completedSets.has(getSetKey(currentExIdx, setNum));
@@ -400,6 +554,34 @@ export default function ExecutarTreinoIA() {
                     );
                   })}
                 </div>
+
+                {/* Botão Como Fazer */}
+                <button
+                  onClick={() => setShowDescription(prev => !prev)}
+                  className="mt-3 ml-10 flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                  Como fazer este exercício
+                  {showDescription ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+
+                {/* Descrição de execução */}
+                {showDescription && (
+                  <div className="mt-2 ml-10 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                    {currentExercise.description ? (
+                      <p className="text-sm text-foreground leading-relaxed">{currentExercise.description}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">
+                        Descrição não disponível para este exercício. Consulte um profissional para aprender a execução correta.
+                      </p>
+                    )}
+                    {currentExercise.notes && (
+                      <p className="text-xs text-primary mt-2 pt-2 border-t border-primary/20">
+                        <strong>Dica:</strong> {currentExercise.notes}
+                      </p>
+                    )}
+                  </div>
+                )}
               </CardHeader>
             </Card>
 
@@ -468,11 +650,7 @@ export default function ExecutarTreinoIA() {
                   </p>
                 </div>
 
-                {currentExercise.notes && (
-                  <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <p className="text-xs text-blue-400">{currentExercise.notes}</p>
-                  </div>
-                )}
+
               </CardContent>
             </Card>
 

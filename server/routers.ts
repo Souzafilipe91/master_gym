@@ -317,19 +317,21 @@ NUTRIÇÃO:
 OBSERVAÇÕES:
 ${anamnese.additionalNotes || "Nenhuma"}
 
-Crie um programa de treino completo e personalizado seguindo estas diretrizes:
+Crie um programa de treino completo e personalizado. IMPORTANTE: para cada exercício, use EXATAMENTE este formato:
 
-1. Divida o treino em 4 sessões (A, B, C, D) considerando os dias disponíveis
-2. Para cada treino, especifique:
-   - Nome do treino e grupos musculares trabalhados
-   - Lista de exercícios (8-12 por treino)
-   - Para cada exercício: nome, séries, repetições, carga inicial sugerida, tempo de descanso
-   - Técnicas avançadas quando aplicável (drop set, rest-pause, etc)
-3. Inclua recomendações de cardio (frequência, duração, intensidade)
-4. Sugira progressão de carga (quanto aumentar e quando)
-5. Dê dicas específicas baseadas nas restrições e objetivos
+### N. Nome do Exercício
+**Séries:** X | **Reps:** Y-Z | **Descanso:** Xs
+**Execução:** Descrição detalhada de como executar o exercício corretamente, incluindo posicionamento, movimento, pegada e respiração.
+**Dica:** Observação técnica importante ou técnica avançada quando aplicável.
 
-Formate a resposta em Markdown com seções claras e bem organizadas.`;
+Estrutura do programa:
+1. Título do programa com # (ex: # Programa de Musculação Personalizado)
+2. Divisão em 4 sessões (A, B, C, D) com ## para cada sessão
+3. Para cada sessão: grupos musculares trabalhados e 8-12 exercícios no formato acima
+4. Seção "## Cardio" com recomendações
+5. Seção "## Progressão de Carga" com orientações
+
+Não use tabelas, apenas o formato de cabeçalho ### para cada exercício. Formate em Markdown com seções claras.`;
 
         // Chamar LLM
         const response = await invokeLLM({
@@ -422,17 +424,21 @@ PARÂMETROS DO TREINO:
 - Duração: ${durationText}
 - Nível de dificuldade: ${difficultyText}
 
-Crie um treino de calistenia detalhado com:
-1. Nome do treino e objetivo
-2. Aquecimento (5-10 min): 3-4 exercícios com duração/repetições
-3. Bloco principal (${durationText}): 6-10 exercícios organizados em blocos ou circuitos
-   - Para cada exercício: nome, séries/repetições ou tempo, descanso, descrição da execução correta
-   - Variações mais fáceis e mais difíceis de cada exercício
-4. Desaquecimento/alongamento (5 min)
-5. Dicas de progressão: como avançar o treino nas próximas semanas
-6. Frequência recomendada por semana
+Crie um treino de calistenia detalhado. IMPORTANTE: use EXATAMENTE o formato abaixo para cada exercício:
 
-Formate em Markdown com seções claras. Use emojis para deixar mais visual e motivador.`;
+### N. Nome do Exercício
+**Séries:** X | **Reps:** Y-Z | **Descanso:** Xs
+**Execução:** Descrição detalhada de como executar o exercício corretamente, incluindo posicionamento do corpo, movimento e respiração.
+**Dica:** Observação importante ou variação mais fácil/difícil.
+
+Estrutura do treino:
+1. Título do treino com # (ex: # Treino de Calistenia Full Body)
+2. Aquecimento (5-10 min): 3-4 exercícios no formato acima
+3. Bloco principal (${durationText}): 6-10 exercícios no formato acima
+4. Desaquecimento/alongamento (5 min): 2-3 exercícios no formato acima
+5. Dicas de progressão para as próximas semanas
+
+Use emojis para deixar mais visual e motivador. Não use tabelas, apenas o formato de cabeçalho ### para cada exercício.`;
 
         const response = await invokeLLM({
           messages: [
@@ -522,21 +528,21 @@ DADOS DO ALUNO:
 - Duração disponível: ${anamnese.sessionDuration || "60 minutos"}
 - Nível de atividade: ${anamnese.activityLevel}
 
-Crie uma versão adaptada da rotina que:
-1. Mantenha a essência e estrutura do treino original
-2. Substitua exercícios inadequados por alternativas seguras para o aluno
-3. Ajuste volume (séries/repetições) ao nível de experiência
-4. Ajuste cargas iniciais sugeridas ao perfil do aluno
-5. Indique quais exercícios foram mantidos, modificados ou substituídos e por quê
-6. Adicione progressão sugerida para as próximas 4 semanas
+Crie uma versão adaptada da rotina. IMPORTANTE: para cada exercício do treino adaptado, use EXATAMENTE este formato:
 
-Formate em Markdown com:
-- Seção "Análise do Treino Original" (resumo do que foi extraído)
-- Seção "Treino Adaptado" (versão personalizada)
-- Seção "Modificações Realizadas" (o que mudou e por quê)
-- Seção "Progressão Sugerida" (como evoluir)
+### N. Nome do Exercício
+**Séries:** X | **Reps:** Y-Z | **Descanso:** Xs
+**Execução:** Descrição detalhada de como executar o exercício corretamente, incluindo posicionamento, movimento e respiração.
+**Dica:** Observação ou modificação feita em relação ao original.
 
-Use emojis para tornar mais visual.`;
+Estrutura da resposta:
+1. Título do treino com # (ex: # Treino Adaptado - [Nome do Atleta])
+2. Seção "## Análise do Treino Original" (resumo breve)
+3. Seção "## Treino Adaptado" com todos os exercícios no formato acima
+4. Seção "## Modificações" (o que mudou e por quê)
+5. Seção "## Progressão Sugerida" (como evoluir nas próximas 4 semanas)
+
+Não use tabelas, apenas o formato de cabeçalho ### para cada exercício. Use emojis para tornar mais visual.`;
 
         const adaptationResponse = await invokeLLM({
           messages: [

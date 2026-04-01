@@ -330,3 +330,9 @@
 - [x] Treinos IA aparecem com cards visuais iguais ao A/B/C/D (letra, cor, tempo, descrição)
 - [x] Aba "Treinos Antigos" separada para treinos anteriores
 - [x] Treino IA mais recente fica como "atual" em cada categoria
+
+## Melhoria — Nomes e Descrição de Exercícios nos Treinos IA
+- [x] Corrigir parser de markdown para extrair nomes reais dos exercícios (não "Exercício 1", "Exercício 2")
+- [x] Adicionar botão "Como fazer" com descrição detalhada de execução em cada exercício
+- [x] Atualizar prompts do LLM (musculação, calistenia, copiar treino) para formato estruturado com ### e Execução
+- [x] Resetar descrição expandida ao avançar para próximo exercício
