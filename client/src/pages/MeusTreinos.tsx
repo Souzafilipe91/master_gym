@@ -5,11 +5,245 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import {
   Dumbbell, Activity, Loader2, Home, Video, ChevronDown, ChevronUp,
-  Clock, Calendar, Trash2, Eye, Sparkles, BookOpen, Play
+  Clock, Calendar, Trash2, Eye, Sparkles, BookOpen, Play, ChevronRight,
+  Zap, User
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+type AiWorkout = {
+  id: number;
+  title: string;
+  content: string;
+  type: string;
+  athleteName?: string | null;
+  videoUrl?: string | null;
+  focus?: string | null;
+  duration?: number | null;
+  difficulty?: string | null;
+  createdAt: Date;
+};
+
+// Gera uma letra/ícone e cor para o card IA baseado no tipo e índice
+function getAiCardStyle(type: string, index: number) {
+  const calisteniaColors = [
+    { bg: "bg-green-500/10", border: "border-green-500/30", text: "text-green-500", letter: "C" },
+    { bg: "bg-teal-500/10", border: "border-teal-500/30", text: "text-teal-500", letter: "C" },
+    { bg: "bg-emerald-500/10", border: "border-emerald-500/30", text: "text-emerald-500", letter: "C" },
+  ];
+  const musculacaoColors = [
+    { bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-500", letter: "M" },
+    { bg: "bg-orange-500/10", border: "border-orange-500/30", text: "text-orange-500", letter: "M" },
+    { bg: "bg-amber-500/10", border: "border-amber-500/30", text: "text-amber-500", letter: "M" },
+  ];
+  const copiadoColors = [
+    { bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-500", letter: "V" },
+    { bg: "bg-indigo-500/10", border: "border-indigo-500/30", text: "text-indigo-500", letter: "V" },
+    { bg: "bg-violet-500/10", border: "border-violet-500/30", text: "text-violet-500", letter: "V" },
+  ];
+
+  const palette = type === "calistenia" ? calisteniaColors
+    : type === "musculacao" ? musculacaoColors
+    : copiadoColors;
+
+  return palette[index % palette.length];
+}
+
+// ─── Card Visual Grande (igual ao A/B/C/D) ───────────────────────────────────
+
+function AiWorkoutBigCard({
+  workout,
+  colorIndex = 0,
+  onDelete,
+  isDeleting,
+}: {
+  workout: AiWorkout;
+  colorIndex?: number;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
+  const [, navigate] = useLocation();
+  const [showContent, setShowContent] = useState(false);
+  const c = getAiCardStyle(workout.type, colorIndex);
+
+  const dateStr = new Date(workout.createdAt).toLocaleDateString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+
+  // Extrai uma descrição curta do título ou focus
+  const description = workout.focus
+    ? `Foco: ${workout.focus}`
+    : workout.athleteName
+    ? `Baseado em ${workout.athleteName}`
+    : "Treino gerado por IA";
+
+  return (
+    <div className="space-y-2">
+      <Card className={`transition-all hover:scale-[1.01] ${c.border} ${c.bg} relative`}>
+        {/* Badge Atual */}
+        <div className="absolute top-3 right-3 flex items-center gap-1">
+          <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30 px-2">
+            Atual
+          </Badge>
+        </div>
+
+        <CardHeader className="pb-3 pr-20">
+          <div className="flex items-center gap-3">
+            {/* Letra/Ícone */}
+            <div className={`w-12 h-12 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center flex-shrink-0`}>
+              <span className={`text-2xl font-bold ${c.text}`}>{c.letter}</span>
+            </div>
+            <div className="min-w-0">
+              <CardTitle className="text-base leading-tight">{workout.title}</CardTitle>
+              <CardDescription className="text-xs mt-0.5">{description}</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="pt-0 space-y-3">
+          {/* Metadados */}
+          <div className="flex items-center gap-4 flex-wrap">
+            {workout.duration && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Activity className="w-3 h-3" />
+                <span>{workout.duration} min</span>
+              </div>
+            )}
+            {workout.difficulty && (
+              <Badge variant="outline" className="text-xs py-0">{workout.difficulty}</Badge>
+            )}
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Calendar className="w-3 h-3" />
+              <span>{dateStr}</span>
+            </div>
+            {workout.athleteName && (
+              <div className="flex items-center gap-1 text-xs text-primary font-medium">
+                <User className="w-3 h-3" />
+                <span>{workout.athleteName}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Botões de ação */}
+          <div className="flex gap-2">
+            <Button
+              className="flex-1"
+              onClick={() => navigate(`/treino-ia/${workout.id}/executar`)}
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Iniciar Treino
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowContent(!showContent)}
+              title="Ver conteúdo"
+            >
+              {showContent ? <ChevronUp className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </Button>
+            {workout.videoUrl && (
+              <a href={workout.videoUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="icon" title="Ver vídeo">
+                  <Video className="w-4 h-4" />
+                </Button>
+              </a>
+            )}
+            <Button
+              variant="outline"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={onDelete}
+              disabled={isDeleting}
+              title="Excluir"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Conteúdo expandido */}
+          {showContent && (
+            <div className="border-t border-border pt-4 mt-2">
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <Streamdown>{workout.content}</Streamdown>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Card Compacto para Treinos Antigos ──────────────────────────────────────
+
+function AiWorkoutOldCard({
+  workout,
+  onDelete,
+  isDeleting,
+}: {
+  workout: AiWorkout;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
+  const [, navigate] = useLocation();
+  const [showContent, setShowContent] = useState(false);
+  const dateStr = new Date(workout.createdAt).toLocaleDateString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+
+  return (
+    <Card className="border-border/50 bg-muted/20">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{workout.title}</p>
+            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {dateStr}
+              </span>
+              {workout.duration && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {workout.duration} min
+                </span>
+              )}
+              {workout.athleteName && (
+                <span className="text-xs text-muted-foreground">{workout.athleteName}</span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Button variant="ghost" size="icon" className="h-7 w-7"
+              onClick={() => navigate(`/treino-ia/${workout.id}/executar`)}>
+              <Play className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowContent(!showContent)}>
+              {showContent ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </Button>
+            <Button
+              variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={onDelete} disabled={isDeleting}>
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      {showContent && (
+        <CardContent className="pt-0">
+          <div className="border-t border-border pt-3">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <Streamdown>{workout.content}</Streamdown>
+            </div>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
 
 // ─── Seção de Musculação (Programa) ─────────────────────────────────────────
 
@@ -20,8 +254,7 @@ function MusculacaoSection() {
     onSuccess: () => { toast.success("Treino removido"); refetch(); },
     onError: (err) => toast.error(err.message),
   });
-
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [showOld, setShowOld] = useState(false);
 
   const colors = {
     A: { bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-500" },
@@ -30,9 +263,12 @@ function MusculacaoSection() {
     D: { bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-500" },
   } as Record<string, { bg: string; border: string; text: string }>;
 
+  // O mais recente é o "atual", os demais são anteriores
+  const current = savedMusculacao?.[0];
+  const previous = savedMusculacao?.slice(1) ?? [];
+
   return (
     <section>
-      {/* Header da seção */}
       <div className="flex items-center gap-2 mb-4">
         <div className="p-1.5 bg-primary/10 rounded-lg">
           <Dumbbell className="w-4 h-4 text-primary" />
@@ -41,7 +277,7 @@ function MusculacaoSection() {
       </div>
 
       {/* Programa atual */}
-      <div className="mb-2">
+      <div className="mb-5">
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
           Programa Atual
@@ -86,25 +322,44 @@ function MusculacaoSection() {
         )}
       </div>
 
-      {/* Treinos IA salvos */}
-      {savedMusculacao && savedMusculacao.length > 0 && (
-        <div className="mt-5">
+      {/* Treino IA atual */}
+      {current && (
+        <div className="mb-5">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-muted-foreground inline-block" />
-            Gerados por IA ({savedMusculacao.length})
+            <Sparkles className="w-3 h-3 text-primary" />
+            Treino IA Atual
           </p>
-          <div className="space-y-2">
-            {savedMusculacao.map((w) => (
-              <AiWorkoutCard
-                key={w.id}
-                workout={w}
-                expanded={expandedId === w.id}
-                onToggle={() => setExpandedId(expandedId === w.id ? null : w.id)}
-                onDelete={() => deleteMutation.mutate({ id: w.id })}
-                isDeleting={deleteMutation.isPending}
-              />
-            ))}
-          </div>
+          <AiWorkoutBigCard
+            workout={current}
+            colorIndex={0}
+            onDelete={() => deleteMutation.mutate({ id: current.id })}
+            isDeleting={deleteMutation.isPending}
+          />
+        </div>
+      )}
+
+      {/* Treinos IA antigos */}
+      {previous.length > 0 && (
+        <div>
+          <button
+            className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 hover:text-foreground transition-colors"
+            onClick={() => setShowOld(!showOld)}
+          >
+            {showOld ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            Treinos Antigos ({previous.length})
+          </button>
+          {showOld && (
+            <div className="space-y-2">
+              {previous.map((w) => (
+                <AiWorkoutOldCard
+                  key={w.id}
+                  workout={w}
+                  onDelete={() => deleteMutation.mutate({ id: w.id })}
+                  isDeleting={deleteMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </section>
@@ -119,7 +374,7 @@ function CalisteniaSection() {
     onSuccess: () => { toast.success("Treino removido"); refetch(); },
     onError: (err) => toast.error(err.message),
   });
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [showOld, setShowOld] = useState(false);
   const [, navigate] = useLocation();
 
   if (!saved || saved.length === 0) {
@@ -145,7 +400,6 @@ function CalisteniaSection() {
     );
   }
 
-  // O mais recente é o "atual", os demais são anteriores
   const [current, ...previous] = saved;
 
   return (
@@ -158,41 +412,42 @@ function CalisteniaSection() {
         <Badge variant="secondary" className="text-xs">{saved.length}</Badge>
       </div>
 
-      {/* Treino atual */}
-      <div className="mb-2">
+      {/* Treino atual — card visual grande */}
+      <div className="mb-5">
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
           Treino Atual
         </p>
-        <AiWorkoutCard
+        <AiWorkoutBigCard
           workout={current}
-          expanded={expandedId === current.id}
-          onToggle={() => setExpandedId(expandedId === current.id ? null : current.id)}
+          colorIndex={0}
           onDelete={() => deleteMutation.mutate({ id: current.id })}
           isDeleting={deleteMutation.isPending}
-          highlight
         />
       </div>
 
-      {/* Treinos anteriores */}
+      {/* Treinos antigos colapsáveis */}
       {previous.length > 0 && (
-        <div className="mt-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-muted-foreground inline-block" />
-            Anteriores ({previous.length})
-          </p>
-          <div className="space-y-2">
-            {previous.map((w) => (
-              <AiWorkoutCard
-                key={w.id}
-                workout={w}
-                expanded={expandedId === w.id}
-                onToggle={() => setExpandedId(expandedId === w.id ? null : w.id)}
-                onDelete={() => deleteMutation.mutate({ id: w.id })}
-                isDeleting={deleteMutation.isPending}
-              />
-            ))}
-          </div>
+        <div>
+          <button
+            className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 hover:text-foreground transition-colors"
+            onClick={() => setShowOld(!showOld)}
+          >
+            {showOld ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            Treinos Antigos ({previous.length})
+          </button>
+          {showOld && (
+            <div className="space-y-2">
+              {previous.map((w) => (
+                <AiWorkoutOldCard
+                  key={w.id}
+                  workout={w}
+                  onDelete={() => deleteMutation.mutate({ id: w.id })}
+                  isDeleting={deleteMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </section>
@@ -207,7 +462,7 @@ function CopiaVideoSection() {
     onSuccess: () => { toast.success("Treino removido"); refetch(); },
     onError: (err) => toast.error(err.message),
   });
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [showOld, setShowOld] = useState(false);
   const [, navigate] = useLocation();
 
   if (!saved || saved.length === 0) {
@@ -245,157 +500,45 @@ function CopiaVideoSection() {
         <Badge variant="secondary" className="text-xs">{saved.length}</Badge>
       </div>
 
-      {/* Treino atual */}
-      <div className="mb-2">
+      {/* Treino atual — card visual grande */}
+      <div className="mb-5">
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
           Treino Atual
         </p>
-        <AiWorkoutCard
+        <AiWorkoutBigCard
           workout={current}
-          expanded={expandedId === current.id}
-          onToggle={() => setExpandedId(expandedId === current.id ? null : current.id)}
+          colorIndex={0}
           onDelete={() => deleteMutation.mutate({ id: current.id })}
           isDeleting={deleteMutation.isPending}
-          highlight
-          showAthlete
         />
       </div>
 
-      {/* Treinos anteriores */}
+      {/* Treinos antigos colapsáveis */}
       {previous.length > 0 && (
-        <div className="mt-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-muted-foreground inline-block" />
-            Anteriores ({previous.length})
-          </p>
-          <div className="space-y-2">
-            {previous.map((w) => (
-              <AiWorkoutCard
-                key={w.id}
-                workout={w}
-                expanded={expandedId === w.id}
-                onToggle={() => setExpandedId(expandedId === w.id ? null : w.id)}
-                onDelete={() => deleteMutation.mutate({ id: w.id })}
-                isDeleting={deleteMutation.isPending}
-                showAthlete
-              />
-            ))}
-          </div>
+        <div>
+          <button
+            className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 hover:text-foreground transition-colors"
+            onClick={() => setShowOld(!showOld)}
+          >
+            {showOld ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            Treinos Antigos ({previous.length})
+          </button>
+          {showOld && (
+            <div className="space-y-2">
+              {previous.map((w) => (
+                <AiWorkoutOldCard
+                  key={w.id}
+                  workout={w}
+                  onDelete={() => deleteMutation.mutate({ id: w.id })}
+                  isDeleting={deleteMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </section>
-  );
-}
-
-// ─── Card de Treino IA ───────────────────────────────────────────────────────
-
-type AiWorkout = {
-  id: number;
-  title: string;
-  content: string;
-  type: string;
-  athleteName?: string | null;
-  videoUrl?: string | null;
-  focus?: string | null;
-  duration?: number | null;
-  difficulty?: string | null;
-  createdAt: Date;
-};
-
-function AiWorkoutCard({
-  workout,
-  expanded,
-  onToggle,
-  onDelete,
-  isDeleting,
-  highlight = false,
-  showAthlete = false,
-}: {
-  workout: AiWorkout;
-  expanded: boolean;
-  onToggle: () => void;
-  onDelete: () => void;
-  isDeleting: boolean;
-  highlight?: boolean;
-  showAthlete?: boolean;
-}) {
-  const [, navigate] = useLocation();
-  const dateStr = new Date(workout.createdAt).toLocaleDateString("pt-BR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-  });
-
-  return (
-    <Card className={`transition-all ${highlight ? "border-primary/40 bg-primary/5" : "border-border"}`}>
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <CardTitle className="text-sm font-semibold truncate">{workout.title}</CardTitle>
-              {highlight && <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">Atual</Badge>}
-            </div>
-            <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {dateStr}
-              </span>
-              {workout.duration && (
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {workout.duration} min
-                </span>
-              )}
-              {workout.difficulty && (
-                <Badge variant="outline" className="text-xs py-0">{workout.difficulty}</Badge>
-              )}
-              {showAthlete && workout.athleteName && (
-                <span className="text-xs text-primary font-medium">{workout.athleteName}</span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {workout.videoUrl && (
-              <a href={workout.videoUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <Video className="w-3.5 h-3.5" />
-                </Button>
-              </a>
-            )}
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle}>
-              {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-destructive hover:text-destructive"
-              onClick={onDelete}
-              disabled={isDeleting}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </div>
-        {/* Botão Executar Treino */}
-        <Button
-          className="w-full mt-3"
-          size="sm"
-          onClick={() => navigate(`/treino-ia/${workout.id}/executar`)}
-        >
-          <Play className="w-4 h-4 mr-2" />
-          Executar Treino
-        </Button>
-      </CardHeader>
-
-      {expanded && (
-        <CardContent className="pt-0">
-          <div className="border-t border-border pt-4">
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <Streamdown>{workout.content}</Streamdown>
-            </div>
-          </div>
-        </CardContent>
-      )}
-    </Card>
   );
 }
 

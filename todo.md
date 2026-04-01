@@ -325,3 +325,8 @@
 - [x] Garantir que treinos IA (musculação, calistenia, cópia) são salvos em Meus Treinos
 - [x] Unificar fluxo: todos os treinos têm card → detalhes → executar com timer
 - [x] Criar ExecutarTreinoIA unificado para calistenia e cópia por vídeo
+
+## Redesign Meus Treinos — Cards IA Visuais
+- [x] Treinos IA aparecem com cards visuais iguais ao A/B/C/D (letra, cor, tempo, descrição)
+- [x] Aba "Treinos Antigos" separada para treinos anteriores
+- [x] Treino IA mais recente fica como "atual" em cada categoria
