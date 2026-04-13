@@ -342,11 +342,15 @@
 - [x] Aplicar como fallback no ExecutarTreinoIA quando treino não tem descrição própria
 
 ## Bugs e Melhorias — Abril 2026
-- [ ] Corrigir 404 ao clicar em Cancelar no ExecutarTreinoIA
-- [ ] Separar treino IA por blocos de dias no parser (Dia A, Dia B, etc.)
+- [x] Corrigir 404 ao clicar em Cancelar no ExecutarTreinoIA
+- [x] Separar treino IA por blocos de dias no parser (Dia A, Dia B, etc.)
 - [ ] Excluir treino anterior automaticamente ao gerar novo treino IA
 
 ## Padronização de Execução de Treino
 - [x] Extrair componente ExerciseCard reutilizável do ExecutarTreinoIA
 - [x] Aplicar ExerciseCard no ExecutarTreino (A/B/C/D)
 - [x] Verificar se Calistenia e CopiarTreino também têm tela de execução para padronizar
+
+## Bugs Críticos — Abril 2026 (2)
+- [x] Corrigir erro React #300 na Calistenia (useState em IIFE)
+- [x] Separar treino IA por dias na tela de visualização (não só execução)

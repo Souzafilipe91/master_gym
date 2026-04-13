@@ -280,6 +280,38 @@ interface ParsedWorkout {
   days?: WorkoutDay[];    // agrupado por dias (quando detectado)
 }
 
+// Detecta blocos de dias no markdown e agrupa exercícios por dia
+function parseDaysFromMarkdown(markdown: string, allExercises: AIExercise[]): WorkoutDay[] {
+  const days: WorkoutDay[] = [];
+  // Padrão: ## Dia A, ## Segunda-feira, ## Treino 1, ## Bloco A, etc.
+  const dayHeaderRegex = /^#{1,3}\s*((?:Dia|Treino|Bloco|Semana|Segunda|Terça|Quarta|Quinta|Sexta|Sábado|Domingo)[^\n]*)/gim;
+  const dayMatches: { label: string; index: number }[] = [];
+  let m;
+  while ((m = dayHeaderRegex.exec(markdown)) !== null) {
+    const label = m[1].replace(/[*_#]/g, "").trim();
+    // Ignorar se é título principal do treino
+    if (/programa|plano|treino de/i.test(label) && dayMatches.length === 0) continue;
+    dayMatches.push({ label, index: m.index });
+  }
+  if (dayMatches.length < 2) return [];
+
+  // Para cada bloco de dia, encontrar quais exercícios pertencem a ele
+  // baseado na posição do nome do exercício no markdown
+  for (let i = 0; i < dayMatches.length; i++) {
+    const start = dayMatches[i].index;
+    const end = i + 1 < dayMatches.length ? dayMatches[i + 1].index : markdown.length;
+    const block = markdown.slice(start, end);
+    const dayExercises = allExercises.filter(ex => {
+      const nameInBlock = block.toLowerCase().includes(ex.name.toLowerCase());
+      return nameInBlock;
+    });
+    if (dayExercises.length > 0) {
+      days.push({ label: dayMatches[i].label, exercises: dayExercises });
+    }
+  }
+  return days;
+}
+
 function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
   const lines = markdown.split("\n").map(l => l.trim());
   const exercises: AIExercise[] = [];
@@ -359,7 +391,8 @@ function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
   }
   
   if (headerExercises.length >= 3) {
-    return { title, exercises: headerExercises };
+    const days = parseDaysFromMarkdown(rawText, headerExercises);
+    return { title, exercises: headerExercises, days: days.length >= 2 ? days : undefined };
   }
   
   // Estratégia 2: linha única com padrão "- **Nome**: 3x12"
@@ -516,6 +549,8 @@ export default function ExecutarTreinoIA() {
   const [finished, setFinished] = useState(false);
   const [showExerciseList, setShowExerciseList] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
+  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
+  const [dayStarted, setDayStarted] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Solicitar permissão de notificação ao montar
@@ -585,7 +620,9 @@ export default function ExecutarTreinoIA() {
   }
 
   const parsed = parseWorkoutMarkdown(workout.content);
-  const exercises = parsed.exercises;
+  // Se o treino tem dias, usar os exercícios do dia selecionado
+  const activeDay = parsed.days ? parsed.days[selectedDayIdx] : undefined;
+  const exercises = activeDay ? activeDay.exercises : parsed.exercises;
   const currentExercise = exercises[currentExIdx];
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
   const completedCount = completedSets.size;
@@ -639,7 +676,70 @@ export default function ExecutarTreinoIA() {
   const isUserConfig = userRestTime !== null && !isNaN(parseInt(userRestTime, 10));
   const currentSetValues = getSetValues(currentExIdx, currentSet);
 
-  // ─── Tela de conclusão ────────────────────────────────────────────────────
+  // ─── Tela de seleção de dia (quando treino tem múltiplos dias) ────────────────────
+  if (parsed.days && !dayStarted) {
+    return (
+      <div className="min-h-screen bg-background pb-16">
+        <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+          <div className="container py-4">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/treinos-salvos")}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
+              </Button>
+              <h1 className="text-base font-bold truncate max-w-[200px]">{workout.title}</h1>
+              <div className="w-16" />
+            </div>
+          </div>
+        </header>
+        <main className="container py-8 max-w-2xl">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Dumbbell className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold mb-1">Escolha o Dia</h2>
+            <p className="text-muted-foreground text-sm">Selecione qual dia do programa você vai treinar hoje</p>
+          </div>
+          <div className="space-y-3">
+            {parsed.days.map((day, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setSelectedDayIdx(idx);
+                  setCurrentExIdx(0);
+                  setCurrentSet(1);
+                  setCompletedSets(new Set());
+                  setSetData({});
+                  setDayStarted(true);
+                }}
+                className="w-full text-left p-4 rounded-xl border-2 border-border bg-card transition-all hover:border-primary/50 hover:bg-primary/5"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-semibold text-base">{day.label}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {day.exercises.length} exercícios · {day.exercises.reduce((s, e) => s + e.sets, 0)} séries
+                    </p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {day.exercises.slice(0, 4).map((ex, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">{ex.name}</Badge>
+                      ))}
+                      {day.exercises.length > 4 && (
+                        <Badge variant="outline" className="text-xs">+{day.exercises.length - 4} mais</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 ml-3" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Tela de conclusão ────────────────────────────────────────────────────────────────────────────
   if (finished) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
@@ -667,6 +767,19 @@ export default function ExecutarTreinoIA() {
               <Play className="w-5 h-5 mr-2" />
               Repetir Treino
             </Button>
+            {parsed.days && (
+              <Button variant="outline" className="w-full" onClick={() => {
+                setCurrentExIdx(0);
+                setCurrentSet(1);
+                setCompletedSets(new Set());
+                setSetData({});
+                setFinished(false);
+                setDayStarted(false);
+              }}>
+                <TrendingUp className="w-5 h-5 mr-2" />
+                Treinar Outro Dia
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -687,8 +800,17 @@ export default function ExecutarTreinoIA() {
             <div className="text-center">
               <h1 className="text-base font-bold truncate max-w-[180px]">{workout.title}</h1>
               <p className="text-xs text-muted-foreground">
+                {activeDay ? `${activeDay.label} · ` : ""}
                 Exercício {currentExIdx + 1} de {exercises.length}
               </p>
+              {parsed.days && (
+                <button
+                  onClick={() => setDayStarted(false)}
+                  className="text-xs text-primary hover:underline mt-0.5"
+                >
+                  Trocar dia
+                </button>
+              )}
             </div>
             <Button
               variant="ghost"

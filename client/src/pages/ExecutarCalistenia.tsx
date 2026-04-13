@@ -319,6 +319,7 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
                 </>
               );
             })()}
+            {/* Nota: o IIFE acima não usa hooks, apenas variáveis do escopo do componente */}
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Info da série */}

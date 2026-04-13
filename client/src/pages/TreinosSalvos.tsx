@@ -30,16 +30,7 @@ export default function TreinosSalvos() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [executing, setExecuting] = useState<ExecutingWorkout | null>(null);
 
-  if (executing) {
-    return (
-      <ExecutarCalistenia
-        workoutContent={executing.content}
-        workoutTitle={executing.title}
-        onFinish={() => setExecuting(null)}
-      />
-    );
-  }
-
+  // ─── TODOS os hooks ANTES de qualquer return condicional ──────────────────
   const { data: workouts, isLoading, refetch } = trpc.savedWorkouts.getAll.useQuery({
     type: filter === "all" ? undefined : filter,
   });
@@ -52,6 +43,7 @@ export default function TreinosSalvos() {
     onError: (err) => toast.error(err.message),
   });
 
+  // ─── Handlers ─────────────────────────────────────────────────────────────
   const handleDelete = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("Remover este treino salvo?")) {
@@ -62,6 +54,17 @@ export default function TreinosSalvos() {
   const toggleExpand = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
   };
+
+  // ─── Return condicional DEPOIS dos hooks ──────────────────────────────────
+  if (executing) {
+    return (
+      <ExecutarCalistenia
+        workoutContent={executing.content}
+        workoutTitle={executing.title}
+        onFinish={() => setExecuting(null)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,7 +118,7 @@ export default function TreinosSalvos() {
           </div>
         )}
 
-        {/* Lista de treinos */}
+        {/* Lista vazia */}
         {!isLoading && workouts && workouts.length === 0 && (
           <Card className="border-dashed border-border/50">
             <CardContent className="p-10 text-center">
@@ -144,6 +147,7 @@ export default function TreinosSalvos() {
           </Card>
         )}
 
+        {/* Lista de treinos */}
         {!isLoading && workouts?.map((workout) => {
           const isExpanded = expandedId === workout.id;
           const isCalistenia = workout.type === "calistenia";
@@ -159,7 +163,6 @@ export default function TreinosSalvos() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
-                    {/* Ícone de tipo */}
                     <div className={`p-2 rounded-lg shrink-0 ${
                       isCalistenia ? "bg-green-500/10" : "bg-blue-500/10"
                     }`}>
@@ -208,7 +211,6 @@ export default function TreinosSalvos() {
                     </div>
                   </div>
 
-                  {/* Ações */}
                   <div className="flex items-center gap-1 shrink-0">
                     <Button
                       variant="ghost"
@@ -227,47 +229,44 @@ export default function TreinosSalvos() {
                 </div>
               </CardHeader>
 
-                  {/* Conteúdo expandido */}
-                  {isExpanded && (
-                    <CardContent className="pt-0 border-t border-border">
-                      {/* Botão de iniciar para calistenia */}
-                      {isCalistenia && (
-                        <Button
-                          className="w-full mb-4"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExecuting({ id: workout.id, title: workout.title, content: workout.content });
-                          }}
-                        >
-                          <Play className="w-4 h-4 mr-2" />
-                          Iniciar Treino
-                        </Button>
-                      )}
-
-                      {/* Link do vídeo original para treinos copiados */}
-                      {workout.videoUrl && (
-                        <div className="mb-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Video className="w-3.5 h-3.5" />
-                            Vídeo original
-                          </span>
-                          <a
-                            href={workout.videoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Assistir no YouTube →
-                          </a>
-                        </div>
-                      )}
-
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <Streamdown>{workout.content}</Streamdown>
-                      </div>
-                    </CardContent>
+              {isExpanded && (
+                <CardContent className="pt-0 border-t border-border">
+                  {isCalistenia && (
+                    <Button
+                      className="w-full mb-4"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExecuting({ id: workout.id, title: workout.title, content: workout.content });
+                      }}
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Iniciar Treino
+                    </Button>
                   )}
+
+                  {workout.videoUrl && (
+                    <div className="mb-4 p-3 bg-muted/50 rounded-lg flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Video className="w-3.5 h-3.5" />
+                        Vídeo original
+                      </span>
+                      <a
+                        href={workout.videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Assistir no YouTube →
+                      </a>
+                    </div>
+                  )}
+
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <Streamdown>{workout.content}</Streamdown>
+                  </div>
+                </CardContent>
+              )}
             </Card>
           );
         })}
