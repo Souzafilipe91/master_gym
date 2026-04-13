@@ -5,11 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft, Play, Pause, SkipForward, CheckCircle2,
-  Timer, Dumbbell, ChevronRight, Trophy, RotateCcw, Home
+  Timer, Dumbbell, ChevronRight, Trophy, RotateCcw, Home,
+  Info, ChevronDown, ChevronUp
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { requestNotificationPermission, notifyRestEnd } from "@/lib/notifications";
+import { getExerciseDescriptionByName } from "@/components/ExerciseCard";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -102,8 +104,12 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
   const [restTimerRunning, setRestTimerRunning] = useState(false);
   const [finished, setFinished] = useState(false);
   const [totalCompleted, setTotalCompleted] = useState(0);
+  const [showExerciseDesc, setShowExerciseDesc] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Resetar descrição ao mudar de exercício
+  useEffect(() => { setShowExerciseDesc(false); }, [currentExIdx]);
 
   const currentExercise = exercises[currentExIdx];
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
@@ -281,6 +287,38 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
               </Button>
             </div>
             <CardTitle className="text-xl mt-2">{currentExercise.name}</CardTitle>
+            {/* Botão Como Fazer */}
+            {(() => {
+              const fallback = getExerciseDescriptionByName(currentExercise.name);
+              const desc = currentExercise.notes || fallback?.description;
+              const tip = fallback?.notes;
+              return (
+                <>
+                  <button
+                    onClick={() => setShowExerciseDesc(p => !p)}
+                    className="mt-1 flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                    Como fazer este exercício
+                    {showExerciseDesc ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                  {showExerciseDesc && (
+                    <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                      {desc ? (
+                        <p className="text-sm text-foreground leading-relaxed">{desc}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">Descrição não disponível. Consulte um profissional.</p>
+                      )}
+                      {tip && (
+                        <p className="text-xs text-primary mt-2 pt-2 border-t border-primary/20">
+                          <strong>Dica:</strong> {tip}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Info da série */}

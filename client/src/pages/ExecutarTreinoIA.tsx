@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { requestNotificationPermission, notifyRestEnd } from "@/lib/notifications";
 import { useHaptic } from "@/hooks/useHaptic";
+import ExerciseCard from "@/components/ExerciseCard";
 
 // ─── Banco de descrições de exercícios (fallback) ───────────────────────────
 
@@ -268,9 +269,15 @@ interface AIExercise {
   description?: string; // como executar o exercício
 }
 
+interface WorkoutDay {
+  label: string;  // ex: "Dia A", "Segunda-feira", "Treino 1"
+  exercises: AIExercise[];
+}
+
 interface ParsedWorkout {
   title: string;
-  exercises: AIExercise[];
+  exercises: AIExercise[]; // lista plana (fallback / sem dias)
+  days?: WorkoutDay[];    // agrupado por dias (quando detectado)
 }
 
 function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
@@ -646,9 +653,9 @@ export default function ExecutarTreinoIA() {
             {exercises.length} exercícios · {totalSets} séries completadas
           </p>
           <div className="space-y-3">
-            <Button className="w-full" size="lg" onClick={() => navigate("/meus-treinos")}>
+            <Button className="w-full" size="lg" onClick={() => navigate("/treinos-salvos")}>
               <ArrowLeft className="w-5 h-5 mr-2" />
-              Voltar para Meus Treinos
+              Voltar para Treinos Salvos
             </Button>
             <Button variant="outline" className="w-full" onClick={() => {
               setCurrentExIdx(0);
@@ -673,7 +680,7 @@ export default function ExecutarTreinoIA() {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container py-4">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/meus-treinos")}>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/treinos-salvos")}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
@@ -766,79 +773,17 @@ export default function ExecutarTreinoIA() {
         {/* Exercício Atual */}
         {!isResting && (
           <>
-            {/* Card do exercício */}
-            <Card className="mb-4">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-bold text-primary">{currentExIdx + 1}</span>
-                      </div>
-                      <CardTitle className="text-xl">{currentExercise.name}</CardTitle>
-                    </div>
-                    <div className="flex items-center gap-2 ml-10">
-                      <Badge variant="secondary" className="text-xs">
-                        {currentExercise.sets} séries × {currentExercise.reps}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        Série {currentSet} de {currentExercise.sets}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                {/* Indicador visual de séries */}
-                <div className="flex gap-2 mt-3 ml-10 flex-wrap">
-                  {Array.from({ length: currentExercise.sets }, (_, i) => {
-                    const setNum = i + 1;
-                    const isDone = completedSets.has(getSetKey(currentExIdx, setNum));
-                    const isCurrent = setNum === currentSet;
-                    return (
-                      <div
-                        key={i}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
-                          isDone
-                            ? "bg-primary text-primary-foreground"
-                            : isCurrent
-                            ? "bg-primary/20 text-primary border-2 border-primary"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {isDone ? <Check className="w-4 h-4" /> : setNum}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Botão Como Fazer */}
-                <button
-                  onClick={() => setShowDescription(prev => !prev)}
-                  className="mt-3 ml-10 flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                  Como fazer este exercício
-                  {showDescription ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
-
-                {/* Descrição de execução */}
-                {showDescription && (
-                  <div className="mt-2 ml-10 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                    {currentExercise.description ? (
-                      <p className="text-sm text-foreground leading-relaxed">{currentExercise.description}</p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic">
-                        Descrição não disponível para este exercício. Consulte um profissional para aprender a execução correta.
-                      </p>
-                    )}
-                    {currentExercise.notes && (
-                      <p className="text-xs text-primary mt-2 pt-2 border-t border-primary/20">
-                        <strong>Dica:</strong> {currentExercise.notes}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </CardHeader>
-            </Card>
+            <ExerciseCard
+              index={currentExIdx + 1}
+              name={currentExercise.name}
+              sets={currentExercise.sets}
+              reps={currentExercise.reps}
+              currentSet={currentSet}
+              completedSetKeys={completedSets}
+              getSetKey={getSetKey}
+              description={currentExercise.description}
+              notes={currentExercise.notes}
+            />
 
             {/* Inputs de Repetições e Carga */}
             <Card className="mb-4">

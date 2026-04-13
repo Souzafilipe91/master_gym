@@ -13,6 +13,7 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { notifyRestEnd, requestNotificationPermission } from "@/lib/notifications";
 import { getRestTimeFromSettings } from "./Configuracoes";
+import ExerciseCard from "@/components/ExerciseCard";
 
 export default function ExecutarTreino() {
   const params = useParams<{ code: string }>();
@@ -435,51 +436,26 @@ export default function ExecutarTreino() {
         {/* Exercício Atual */}
         {!isResting && (
           <>
-            <Card className="mb-6">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl mb-2">{currentExercise.exerciseName}</CardTitle>
-                    <CardDescription>
-                      {currentExercise.technique && (
-                        <Badge variant="secondary" className="mr-2">
-                          {currentExercise.technique}
-                        </Badge>
-                      )}
-                      <span className="text-sm">Série {currentSet} de {currentExercise.sets}</span>
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+            <ExerciseCard
+              index={currentExerciseIndex + 1}
+              name={currentExercise.exerciseName}
+              sets={currentExercise.sets}
+              reps={currentExercise.reps || "10-12"}
+              currentSet={currentSet}
+              completedSetKeys={new Set(
+                Object.entries(exerciseData)
+                  .flatMap(([exId, d]) =>
+                    d.sets.map((_, si) => `${exId}-${si + 1}`)
+                  )
+              )}
+              getSetKey={(exIdx, setNum) => `${currentExercise.exerciseId}-${setNum}`}
+              technique={currentExercise.technique ?? undefined}
+            />
 
             {/* Inputs de Repetições e Carga */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="text-lg">Registrar Série {currentSet}</CardTitle>
-                {/* Indicador visual de progresso */}
-                <div className="flex gap-2 mt-3">
-                  {Array.from({ length: currentExercise.sets }, (_, i) => {
-                    const setNumber = i + 1;
-                    const isCompleted = exerciseData[currentExercise.exerciseId]?.sets[i];
-                    const isCurrent = setNumber === currentSet;
-                    
-                    return (
-                      <div
-                        key={i}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
-                          isCompleted
-                            ? 'bg-primary text-primary-foreground'
-                            : isCurrent
-                            ? 'bg-primary/20 text-primary border-2 border-primary'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {isCompleted ? <Check className="w-4 h-4" /> : setNumber}
-                      </div>
-                    );
-                  })}
-                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
