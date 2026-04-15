@@ -118,6 +118,16 @@ export default function TreinoDetalhes() {
           </Card>
         </div>
 
+        {/* Botão de Iniciar Treino — topo */}
+        <div className="mb-6">
+          <Button size="lg" className="w-full" asChild>
+            <Link href={`/treino/${workoutCode}/registrar`}>
+              <Dumbbell className="w-5 h-5 mr-2" />
+              Iniciar Treino
+            </Link>
+          </Button>
+        </div>
+
         {/* Lista de Exercícios */}
         <div>
           <h2 className="text-2xl font-bold mb-4">Exercícios</h2>

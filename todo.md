@@ -354,3 +354,6 @@
 ## Bugs Críticos — Abril 2026 (2)
 - [x] Corrigir erro React #300 na Calistenia (useState em IIFE)
 - [x] Separar treino IA por dias na tela de visualização (não só execução)
+
+## UX — Botão Iniciar Treino
+- [x] Mover botão "Iniciar Treino" para o topo da página de detalhes (acima dos exercícios)
