@@ -283,15 +283,28 @@ interface ParsedWorkout {
 // Detecta blocos de dias no markdown e agrupa exercícios por dia
 function parseDaysFromMarkdown(markdown: string, allExercises: AIExercise[]): WorkoutDay[] {
   const days: WorkoutDay[] = [];
-  // Padrão: ## Dia A, ## Segunda-feira, ## Treino 1, ## Bloco A, etc.
-  const dayHeaderRegex = /^#{1,3}\s*((?:Dia|Treino|Bloco|Semana|Segunda|Terça|Quarta|Quinta|Sexta|Sábado|Domingo)[^\n]*)/gim;
+  // Padrão ampliado: ## Dia A, ## Sessão A, ## Treino 1, **Sessão A:**, etc.
+  const DAY_KEYWORDS = "Sess[aã]o|Dia|Treino|Bloco|Semana|Segunda|Ter[cç][aã]|Quarta|Quinta|Sexta|S[áa]bado|Domingo|Fase|Etapa";
+  const headerRegex = new RegExp(`^#{1,4}\\s*((?:${DAY_KEYWORDS})[^\\n]*)`, "gim");
+  const boldRegex = new RegExp(`^\\*{1,2}((?:${DAY_KEYWORDS})[^*\\n]*)\\*{1,2}[:\\s]*([^\\n]*)`, "gim");
   const dayMatches: { label: string; index: number }[] = [];
-  let m;
-  while ((m = dayHeaderRegex.exec(markdown)) !== null) {
-    const label = m[1].replace(/[*_#]/g, "").trim();
-    // Ignorar se é título principal do treino
-    if (/programa|plano|treino de/i.test(label) && dayMatches.length === 0) continue;
+  let m: RegExpExecArray | null;
+  while ((m = headerRegex.exec(markdown)) !== null) {
+    const label = m[1].replace(/[*_#:]/g, "").trim();
+    if (!label || label.length < 3) continue;
+    if (/^(programa|plano|treino de)/i.test(label) && dayMatches.length === 0) continue;
     dayMatches.push({ label, index: m.index });
+  }
+  // Fallback: negrito no início de linha
+  if (dayMatches.length < 2) {
+    dayMatches.length = 0;
+    while ((m = boldRegex.exec(markdown)) !== null) {
+      const rawLabel = (m[1] + " " + (m[2] || "")).replace(/[*_#:]/g, "").trim();
+      const label = rawLabel.replace(/\s+/g, " ").trim();
+      if (!label || label.length < 3) continue;
+      if (/^(programa|plano|treino de)/i.test(label) && dayMatches.length === 0) continue;
+      dayMatches.push({ label, index: m.index });
+    }
   }
   if (dayMatches.length < 2) return [];
 

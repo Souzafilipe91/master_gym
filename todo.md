@@ -362,3 +362,6 @@
 - [x] Quando treino IA for gerado e salvo, substituir os cards A/B/C/D por dias do treino IA
 - [x] Cada dia do treino IA vira um card (Dia A, Dia B, etc.) no lugar dos treinos fixos
 - [x] Manter os treinos fixos originais como fallback se não houver treino IA ativo
+
+## Bug — Parser de Dias do Treino IA
+- [x] Corrigir regex para detectar "Sessão A", "Sessão B" e outros formatos além de "Dia A/B"
