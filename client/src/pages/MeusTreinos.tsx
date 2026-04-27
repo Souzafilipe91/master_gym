@@ -331,7 +331,7 @@ function MusculacaoSection() {
                 <div
                   key={day.label}
                   className="cursor-pointer"
-                  onClick={() => navigate(`/treino-ia/${current!.id}/executar`)}
+                  onClick={() => navigate(`/treino-ia/${current!.id}/executar?day=${idx}`)}
                 >
                   <Card className={`transition-all hover:scale-[1.02] ${c.border} ${c.bg}`}>
                     <CardHeader className="pb-3">

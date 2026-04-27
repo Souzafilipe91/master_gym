@@ -365,3 +365,6 @@
 
 ## Bug — Parser de Dias do Treino IA
 - [x] Corrigir regex para detectar "Sessão A", "Sessão B" e outros formatos além de "Dia A/B"
+
+## Bug — Seleção de Dia Duplicada
+- [x] Ao clicar no card de um dia (Sessão A/B), ir direto para execução sem mostrar tela de seleção novamente

@@ -542,9 +542,15 @@ function getRestTimeFromSettings(defaultSeconds: number): number {
 
 export default function ExecutarTreinoIA() {
   const params = useParams<{ id: string }>();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const haptic = useHaptic();
   const workoutId = parseInt(params.id || "0");
+  // Ler ?day= da URL para pular direto para um dia específico
+  const urlDayIdx = (() => {
+    const search = typeof window !== "undefined" ? window.location.search : "";
+    const match = search.match(/[?&]day=(\d+)/);
+    return match ? parseInt(match[1]) : null;
+  })();
 
   // Buscar treino salvo por id
   const { data: workout } = trpc.savedWorkouts.getById.useQuery(
@@ -562,8 +568,9 @@ export default function ExecutarTreinoIA() {
   const [finished, setFinished] = useState(false);
   const [showExerciseList, setShowExerciseList] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
-  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
-  const [dayStarted, setDayStarted] = useState(false);
+  const [selectedDayIdx, setSelectedDayIdx] = useState(urlDayIdx ?? 0);
+  // Se veio com ?day=, pular direto para execução (sem tela de seleção)
+  const [dayStarted, setDayStarted] = useState(urlDayIdx !== null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Solicitar permissão de notificação ao montar
