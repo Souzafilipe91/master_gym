@@ -11,6 +11,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
+import { parseWorkoutDays } from "@/lib/parseWorkoutDays";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -247,6 +248,16 @@ function AiWorkoutOldCard({
 
 // ─── Seção de Musculação (Programa) ─────────────────────────────────────────
 
+// Cores para os dias do treino IA (mesmas do programa fixo)
+const DAY_COLORS = [
+  { bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-500" },
+  { bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-500" },
+  { bg: "bg-orange-500/10", border: "border-orange-500/30", text: "text-orange-500" },
+  { bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-500" },
+  { bg: "bg-green-500/10", border: "border-green-500/30", text: "text-green-500" },
+  { bg: "bg-cyan-500/10", border: "border-cyan-500/30", text: "text-cyan-500" },
+];
+
 function MusculacaoSection() {
   const { data: workoutTypes, isLoading } = trpc.workoutTypes.getAll.useQuery();
   const { data: savedMusculacao, refetch } = trpc.savedWorkouts.getAll.useQuery({ type: "musculacao" });
@@ -255,8 +266,10 @@ function MusculacaoSection() {
     onError: (err) => toast.error(err.message),
   });
   const [showOld, setShowOld] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [, navigate] = useLocation();
 
-  const colors = {
+  const fixedColors = {
     A: { bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-500" },
     B: { bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-500" },
     C: { bg: "bg-orange-500/10", border: "border-orange-500/30", text: "text-orange-500" },
@@ -266,6 +279,10 @@ function MusculacaoSection() {
   // O mais recente é o "atual", os demais são anteriores
   const current = savedMusculacao?.[0];
   const previous = savedMusculacao?.slice(1) ?? [];
+
+  // Parsear dias do treino IA atual
+  const iaDays = current ? parseWorkoutDays(current.content) : [];
+  const hasIaDays = iaDays.length >= 2;
 
   return (
     <section>
@@ -278,19 +295,75 @@ function MusculacaoSection() {
 
       {/* Programa atual */}
       <div className="mb-5">
-        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-          Programa Atual
-        </p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+            Programa Atual
+            {hasIaDays && (
+              <Badge className="ml-1 text-xs bg-primary/10 text-primary border-primary/30 px-1.5 py-0">
+                <Sparkles className="w-2.5 h-2.5 mr-1" />
+                IA
+              </Badge>
+            )}
+          </p>
+          {hasIaDays && (
+            <button
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+              onClick={() => setShowOriginal(!showOriginal)}
+            >
+              {showOriginal ? "Ocultar original" : "Ver programa original"}
+              {showOriginal ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          )}
+        </div>
+
         {isLoading ? (
           <div className="flex items-center gap-2 text-muted-foreground py-4">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span className="text-sm">Carregando...</span>
           </div>
+        ) : hasIaDays ? (
+          /* Cards dos dias do treino IA substituindo A/B/C/D */
+          <div className="grid gap-3 md:grid-cols-2">
+            {iaDays.map((day, idx) => {
+              const c = DAY_COLORS[idx % DAY_COLORS.length];
+              return (
+                <div
+                  key={day.label}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/treino-ia/${current!.id}/executar`)}
+                >
+                  <Card className={`transition-all hover:scale-[1.02] ${c.border} ${c.bg}`}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center flex-shrink-0`}>
+                          <span className={`text-xl font-bold ${c.text}`}>{day.letter}</span>
+                        </div>
+                        <div>
+                          <CardTitle className="text-base">{day.label}</CardTitle>
+                          <CardDescription className="text-xs">{day.exercises.length} exercícios</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Sparkles className="w-3 h-3" />
+                        <span>Treino IA</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {day.exercises.slice(0, 3).join(", ")}{day.exercises.length > 3 ? ` +${day.exercises.length - 3}` : ""}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
+          </div>
         ) : (
+          /* Cards originais A/B/C/D */
           <div className="grid gap-3 md:grid-cols-2">
             {workoutTypes?.map((workout) => {
-              const c = colors[workout.code] || { bg: "bg-primary/10", border: "border-primary/30", text: "text-primary" };
+              const c = fixedColors[workout.code] || { bg: "bg-primary/10", border: "border-primary/30", text: "text-primary" };
               return (
                 <Link key={workout.id} href={`/treino/${workout.code}`}>
                   <Card className={`cursor-pointer transition-all hover:scale-[1.02] ${c.border} ${c.bg}`}>
@@ -320,23 +393,36 @@ function MusculacaoSection() {
             })}
           </div>
         )}
-      </div>
 
-      {/* Treino IA atual */}
-      {current && (
-        <div className="mb-5">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-primary" />
-            Treino IA Atual
-          </p>
-          <AiWorkoutBigCard
-            workout={current}
-            colorIndex={0}
-            onDelete={() => deleteMutation.mutate({ id: current.id })}
-            isDeleting={deleteMutation.isPending}
-          />
-        </div>
-      )}
+        {/* Programa original colapsável (quando IA está ativo) */}
+        {hasIaDays && showOriginal && (
+          <div className="mt-4 pt-4 border-t border-border/50">
+            <p className="text-xs text-muted-foreground mb-3">Programa original (A/B/C/D):</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {workoutTypes?.map((workout) => {
+                const c = fixedColors[workout.code] || { bg: "bg-primary/10", border: "border-primary/30", text: "text-primary" };
+                return (
+                  <Link key={workout.id} href={`/treino/${workout.code}`}>
+                    <Card className={`cursor-pointer transition-all hover:scale-[1.02] ${c.border} ${c.bg} opacity-70`}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-lg ${c.bg} flex items-center justify-center flex-shrink-0`}>
+                            <span className={`text-base font-bold ${c.text}`}>{workout.code}</span>
+                          </div>
+                          <div>
+                            <CardTitle className="text-sm">{workout.name}</CardTitle>
+                            <CardDescription className="text-xs">Treino {workout.code}</CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Treinos IA antigos */}
       {previous.length > 0 && (
