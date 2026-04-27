@@ -17,7 +17,8 @@ import {
   Palette,
   Home,
   Video,
-  BookOpen
+  BookOpen,
+  Salad
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -88,6 +89,11 @@ const menuItems = [
     title: "Treinos Salvos",
     href: "/treinos-salvos",
     icon: BookOpen,
+  },
+  {
+    title: "Dieta",
+    href: "/dieta",
+    icon: Salad,
   },
   {
     title: "Configurações",

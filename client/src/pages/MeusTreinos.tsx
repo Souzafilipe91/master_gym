@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Dumbbell, Activity, Loader2, Home, Video, ChevronDown, ChevronUp,
   Clock, Calendar, Trash2, Eye, Sparkles, BookOpen, Play, ChevronRight,
-  Zap, User
+  Zap, User, Salad
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
@@ -628,6 +628,154 @@ function CopiaVideoSection() {
   );
 }
 
+// ─── Seção de Dieta ─────────────────────────────────────────────────────────
+
+function DietaSection() {
+  const { data: dietas, refetch } = trpc.diets.getAll.useQuery();
+  const deleteMutation = trpc.diets.delete.useMutation({
+    onSuccess: () => { toast.success("Dieta removida"); refetch(); },
+    onError: (err: { message: string }) => toast.error(err.message),
+  });
+  const [showOld, setShowOld] = useState(false);
+  const [, navigate] = useLocation();
+
+  if (!dietas || dietas.length === 0) {
+    return (
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-1.5 bg-primary/10 rounded-lg">
+            <Salad className="w-4 h-4 text-primary" />
+          </div>
+          <h2 className="text-lg font-bold">Dieta</h2>
+        </div>
+        <Card className="border-dashed border-border/50">
+          <CardContent className="py-8 text-center">
+            <Salad className="w-8 h-8 mx-auto mb-3 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground mb-3">Nenhuma dieta gerada ainda.</p>
+            <Button variant="outline" size="sm" onClick={() => navigate("/gerar-dieta")}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Gerar Dieta com IA
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  const [current, ...previous] = dietas;
+
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-4">
+        <div className="p-1.5 bg-primary/10 rounded-lg">
+          <Salad className="w-4 h-4 text-primary" />
+        </div>
+        <h2 className="text-lg font-bold">Dieta</h2>
+        <Badge variant="secondary" className="text-xs">{dietas.length}</Badge>
+        <Badge className="text-xs bg-purple-500/20 text-purple-400 border-purple-500/30">IA</Badge>
+      </div>
+
+      <div className="mb-5">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+          Dieta Atual
+        </p>
+        <Card className="border-green-500/30 bg-green-500/5 relative">
+          <div className="absolute top-3 right-3">
+            <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30 px-2">Atual</Badge>
+          </div>
+          <CardHeader className="pb-3 pr-20">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center justify-center flex-shrink-0">
+                <Salad className="w-6 h-6 text-green-500" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-base leading-tight">{current.title}</CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  {current.objective} · {current.targetCalories ? `${current.targetCalories} kcal/dia` : ""}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              {current.targetCalories && (
+                <Badge variant="outline" className="text-xs">{current.targetCalories} kcal</Badge>
+              )}
+              {current.targetProtein && (
+                <Badge variant="outline" className="text-xs">Proteína: {current.targetProtein}g</Badge>
+              )}
+              {current.targetCarbs && (
+                <Badge variant="outline" className="text-xs">Carbs: {current.targetCarbs}g</Badge>
+              )}
+              {current.targetFat && (
+                <Badge variant="outline" className="text-xs">Gordura: {current.targetFat}g</Badge>
+              )}
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {new Date(current.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={() => navigate(`/dieta/${current.id}`)}>
+                <Eye className="w-4 h-4 mr-2" />
+                Ver Dieta Completa
+              </Button>
+              <Button
+                variant="outline" size="icon"
+                className="text-destructive hover:text-destructive"
+                onClick={() => deleteMutation.mutate({ id: current.id })}
+                disabled={deleteMutation.isPending}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {previous.length > 0 && (
+        <div>
+          <button
+            className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3 hover:text-foreground transition-colors"
+            onClick={() => setShowOld(!showOld)}
+          >
+            {showOld ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            Dietas Antigas ({previous.length})
+          </button>
+          {showOld && (
+            <div className="space-y-2">
+              {previous.map((d: typeof dietas[0]) => (
+                <Card key={d.id} className="border-border/50 bg-muted/20">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{d.title}</p>
+                        <p className="text-xs text-muted-foreground">{d.objective} · {new Date(d.createdAt).toLocaleDateString("pt-BR")}</p>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/dieta/${d.id}`)}>
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => deleteMutation.mutate({ id: d.id })} disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ─── Página Principal ────────────────────────────────────────────────────────
 
 export default function MeusTreinos() {
@@ -654,6 +802,8 @@ export default function MeusTreinos() {
           <CalisteniaSection />
           <div className="border-t border-border/50" />
           <CopiaVideoSection />
+          <div className="border-t border-border/50" />
+          <DietaSection />
         </div>
       </main>
     </div>

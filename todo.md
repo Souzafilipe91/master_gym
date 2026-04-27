@@ -368,3 +368,12 @@
 
 ## Bug — Seleção de Dia Duplicada
 - [x] Ao clicar no card de um dia (Sessão A/B), ir direto para execução sem mostrar tela de seleção novamente
+
+## Seção de Dieta com IA
+- [x] Schema do banco: tabela saved_diets (id, userId, title, objective, content, createdAt)
+- [x] Procedures tRPC: gerar dieta IA, listar, deletar
+- [x] Página GerarDieta: formulário com objetivo, peso, altura, restrições, preferências
+- [x] Prompt LLM: gerar plano alimentar com refeições, macros e calorias
+- [x] Página MinhasDietas: visualizar dieta gerada com cards por refeição
+- [x] Rota e entrada no menu lateral
+- [x] Seção Dieta em Meus Treinos com card atual e histórico

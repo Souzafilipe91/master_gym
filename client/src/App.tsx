@@ -25,6 +25,8 @@ import Calistenia from "./pages/Calistenia";
 import TreinosSalvos from "./pages/TreinosSalvos";
 import CopiarTreino from "./pages/CopiarTreino";
 import ExecutarTreinoIA from "./pages/ExecutarTreinoIA";
+import GerarDieta from "./pages/GerarDieta";
+import MinhasDietas from "./pages/MinhasDietas";
 import { LockScreenWidgetManager } from "./components/LockScreenWidgetManager";
 
 function Router() {
@@ -53,6 +55,9 @@ function Router() {
         <Route path={"/copiar-treino"} component={CopiarTreino} />
         <Route path={"/treinos-salvos"} component={TreinosSalvos} />
         <Route path={"/treino-ia/:id/executar"} component={ExecutarTreinoIA} />
+        <Route path={"/gerar-dieta"} component={GerarDieta} />
+        <Route path={"/dieta"} component={MinhasDietas} />
+        <Route path={"/dieta/:id"} component={MinhasDietas} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

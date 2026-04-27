@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { updateUserWeight } from "./db";
+import { invokeLLM } from "./_core/llm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -576,7 +577,7 @@ Não use tabelas, apenas o formato de cabeçalho ### para cada exercício. Use e
       }),
   }),
 
-  // Profile
+   // Profile
   profile: router({
     updateWeight: protectedProcedure
       .input(z.object({ weight: z.number().positive() }))
@@ -585,6 +586,118 @@ Não use tabelas, apenas o formato de cabeçalho ### para cada exercício. Use e
         return { success: true };
       }),
   }),
-});
+  // Dietas IA
+  diets: router({
+    generate: protectedProcedure
+      .input(z.object({
+        objective: z.enum(["bulking", "cutting", "manutencao", "recomposicao"]),
+        weight: z.string(),
+        height: z.string(),
+        age: z.number(),
+        gender: z.string(),
+        activityLevel: z.string(),
+        restrictions: z.string().optional(),
+        preferences: z.string().optional(),
+        mealsPerDay: z.number().min(3).max(7).default(5),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const objectiveLabels: Record<string, string> = {
+          bulking: "Ganho de Massa Muscular (Bulking)",
+          cutting: "Perda de Gordura (Cutting)",
+          manutencao: "Manutenção do Peso",
+          recomposicao: "Recomposição Corporal",
+        };
+        const activityLabels: Record<string, string> = {
+          sedentario: "Sedentário (sem exercício)",
+          leve: "Levemente ativo (1-2x/semana)",
+          moderado: "Moderadamente ativo (3-4x/semana)",
+          ativo: "Muito ativo (5-6x/semana)",
+          muito_ativo: "Extremamente ativo (2x/dia)",
+        };
+        const prompt = `Crie um plano alimentar completo e detalhado para:
 
+**Dados do usuário:**
+- Objetivo: ${objectiveLabels[input.objective] || input.objective}
+- Peso: ${input.weight}kg
+- Altura: ${input.height}cm
+- Idade: ${input.age} anos
+- Gênero: ${input.gender}
+- Nível de atividade: ${activityLabels[input.activityLevel] || input.activityLevel}
+- Restrições alimentares: ${input.restrictions || "Nenhuma"}
+- Preferências: ${input.preferences || "Nenhuma"}
+- Refeições por dia: ${input.mealsPerDay}
+
+IMPORTANTE: Use EXATAMENTE este formato para cada refeição:
+
+## Refeição N: [Nome da Refeição] ([Horário sugerido])
+**Macros:** Proteína: Xg | Carboidratos: Xg | Gordura: Xg | Calorias: X kcal
+
+### Alimentos:
+- [Alimento]: [quantidade] - [preparo/observação]
+- [Alimento]: [quantidade]
+
+**Dica:** Observação importante sobre esta refeição.
+
+Estrutura completa da resposta:
+1. Título com # (ex: # Plano Alimentar - [Objetivo])
+2. Seção "## Resumo Nutricional" com total de calorias, proteína, carboidratos e gordura diários
+3. Seção "## Distribuição das Refeições" com cada refeição no formato acima
+4. Seção "## Orientações Gerais" com dicas de hidratação, suplementação e comportamento alimentar
+5. Seção "## Substituições" com opções para trocar alimentos principais
+
+Use emojis para tornar mais visual. Seja prático e objetivo.`;
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Você é um nutricionista esportivo especializado em planos alimentares para praticantes de musculação. Gere planos detalhados, práticos e baseados em alimentos acessíveis no Brasil." },
+            { role: "user", content: prompt },
+          ],
+        });
+        const rawContent = response.choices[0]?.message?.content;
+        const content = typeof rawContent === "string" ? rawContent : "";
+        // Extrair macros totais do conteúdo
+        const caloriesMatch = content.match(/Total.*?(\d{3,4})\s*kcal/i) || content.match(/(\d{3,4})\s*kcal.*?total/i);
+        const proteinMatch = content.match(/Prote[ií]na.*?(\d{2,3})g/i);
+        const carbsMatch = content.match(/Carboidratos.*?(\d{2,3})g/i);
+        const fatMatch = content.match(/Gordura.*?(\d{2,3})g/i);
+        const title = `Dieta ${objectiveLabels[input.objective]} - ${new Date().toLocaleDateString("pt-BR")}`;
+        const saved = await db.saveDiet({
+          userId: ctx.user.id,
+          title,
+          objective: input.objective,
+          content,
+          weight: input.weight,
+          height: input.height,
+          age: input.age,
+          gender: input.gender,
+          activityLevel: input.activityLevel,
+          restrictions: input.restrictions,
+          preferences: input.preferences,
+          targetCalories: caloriesMatch ? parseInt(caloriesMatch[1]) : null,
+          targetProtein: proteinMatch ? parseInt(proteinMatch[1]) : null,
+          targetCarbs: carbsMatch ? parseInt(carbsMatch[1]) : null,
+          targetFat: fatMatch ? parseInt(fatMatch[1]) : null,
+        });
+        return { success: true, content, insertId: (saved as any).insertId };
+      }),
+    getAll: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getDietsByUser(ctx.user.id);
+    }),
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const diet = await db.getDietById(input.id);
+        if (!diet || diet.userId !== ctx.user.id) return null;
+        return diet;
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deleteDiet(input.id, ctx.user.id);
+        return { success: true };
+      }),
+    getLatest: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getLatestDiet(ctx.user.id);
+    }),
+  }),
+});
 export type AppRouter = typeof appRouter;

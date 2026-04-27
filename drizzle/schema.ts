@@ -300,3 +300,30 @@ export const savedAiWorkouts = mysqlTable("saved_ai_workouts", {
 
 export type SavedAiWorkout = typeof savedAiWorkouts.$inferSelect;
 export type InsertSavedAiWorkout = typeof savedAiWorkouts.$inferInsert;
+
+/**
+ * Dietas geradas por IA
+ */
+export const savedDiets = mysqlTable("saved_diets", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  objective: mysqlEnum("objective", ["bulking", "cutting", "manutencao", "recomposicao"]).notNull(),
+  content: text("content").notNull(), // markdown da dieta gerada
+  // Dados usados na geração
+  weight: varchar("weight", { length: 10 }),
+  height: varchar("height", { length: 10 }),
+  age: int("age"),
+  gender: varchar("gender", { length: 20 }),
+  activityLevel: varchar("activityLevel", { length: 50 }),
+  restrictions: text("restrictions"),
+  preferences: text("preferences"),
+  // Macros calculados
+  targetCalories: int("targetCalories"),
+  targetProtein: int("targetProtein"),
+  targetCarbs: int("targetCarbs"),
+  targetFat: int("targetFat"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SavedDiet = typeof savedDiets.$inferSelect;
+export type InsertSavedDiet = typeof savedDiets.$inferInsert;

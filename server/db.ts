@@ -4,7 +4,8 @@ import {
   InsertUser, users, cycles, workoutTypes, muscleGroups, exercises, 
   workoutExercises, workoutLogs, exerciseLogs, weightLogs, 
   cardioRecommendations, cardioLogs, anamneses, InsertAnamnese,
-  achievements, userAchievements, savedAiWorkouts, InsertSavedAiWorkout
+  achievements, userAchievements, savedAiWorkouts, InsertSavedAiWorkout,
+  savedDiets, InsertSavedDiet
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -491,4 +492,45 @@ export async function checkAndUnlockAchievements(userId: number) {
       await unlockAchievement(userId, achievement.id);
     }
   }
+}
+
+// ─── Dietas IA ────────────────────────────────────────────────────────────────
+
+export async function saveDiet(data: InsertSavedDiet) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(savedDiets).values(data);
+  return result;
+}
+
+export async function getDietsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(savedDiets)
+    .where(eq(savedDiets.userId, userId))
+    .orderBy(desc(savedDiets.createdAt));
+}
+
+export async function getDietById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(savedDiets).where(eq(savedDiets.id, id));
+  return rows[0] ?? null;
+}
+
+export async function deleteDiet(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(savedDiets)
+    .where(and(eq(savedDiets.id, id), eq(savedDiets.userId, userId)));
+}
+
+export async function getLatestDiet(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(savedDiets)
+    .where(eq(savedDiets.userId, userId))
+    .orderBy(desc(savedDiets.createdAt))
+    .limit(1);
+  return rows[0] ?? null;
 }
