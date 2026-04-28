@@ -327,3 +327,22 @@ export const savedDiets = mysqlTable("saved_diets", {
 });
 export type SavedDiet = typeof savedDiets.$inferSelect;
 export type InsertSavedDiet = typeof savedDiets.$inferInsert;
+
+/**
+ * Registros alimentares diários (contador de calorias)
+ */
+export const foodLogs = mysqlTable("food_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+  meal: mysqlEnum("meal", ["cafe_manha", "lanche_manha", "almoco", "lanche_tarde", "jantar", "ceia"]).notNull().default("almoco"),
+  name: varchar("name", { length: 255 }).notNull(),
+  calories: int("calories").notNull().default(0),
+  protein: decimal("protein", { precision: 6, scale: 1 }).notNull().default("0"),
+  carbs: decimal("carbs", { precision: 6, scale: 1 }).notNull().default("0"),
+  fat: decimal("fat", { precision: 6, scale: 1 }).notNull().default("0"),
+  quantity: varchar("quantity", { length: 50 }), // ex: "100g", "1 unidade"
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type FoodLog = typeof foodLogs.$inferSelect;
+export type InsertFoodLog = typeof foodLogs.$inferInsert;

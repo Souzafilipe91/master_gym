@@ -5,7 +5,8 @@ import {
   workoutExercises, workoutLogs, exerciseLogs, weightLogs, 
   cardioRecommendations, cardioLogs, anamneses, InsertAnamnese,
   achievements, userAchievements, savedAiWorkouts, InsertSavedAiWorkout,
-  savedDiets, InsertSavedDiet
+  savedDiets, InsertSavedDiet,
+  foodLogs, InsertFoodLog
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -533,4 +534,51 @@ export async function getLatestDiet(userId: number) {
     .orderBy(desc(savedDiets.createdAt))
     .limit(1);
   return rows[0] ?? null;
+}
+
+// ─── Food Logs (Contador de Calorias) ────────────────────────────────────────
+
+export async function addFoodLog(data: {
+  userId: number;
+  date: string;
+  meal: "cafe_manha" | "lanche_manha" | "almoco" | "lanche_tarde" | "jantar" | "ceia";
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  quantity?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(foodLogs).values({
+    userId: data.userId,
+    date: data.date,
+    meal: data.meal,
+    name: data.name,
+    calories: data.calories,
+    protein: String(data.protein),
+    carbs: String(data.carbs),
+    fat: String(data.fat),
+    quantity: data.quantity,
+  });
+  return result;
+}
+
+export async function getFoodLogsByDate(userId: number, date: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db
+    .select()
+    .from(foodLogs)
+    .where(and(eq(foodLogs.userId, userId), eq(foodLogs.date, date)))
+    .orderBy(foodLogs.createdAt);
+}
+
+export async function deleteFoodLog(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db
+    .delete(foodLogs)
+    .where(and(eq(foodLogs.id, id), eq(foodLogs.userId, userId)));
 }

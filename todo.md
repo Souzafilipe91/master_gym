@@ -377,3 +377,20 @@
 - [x] Página MinhasDietas: visualizar dieta gerada com cards por refeição
 - [x] Rota e entrada no menu lateral
 - [x] Seção Dieta em Meus Treinos com card atual e histórico
+
+## Contador Diário de Calorias e Proteína
+- [ ] Tabela food_logs no banco (id, userId, date, name, calories, protein, carbs, fat, meal)
+- [ ] Procedures tRPC: adicionar, listar do dia, deletar registro alimentar
+- [ ] Calcular metas diárias automaticamente (peso × fator de objetivo)
+- [ ] Página ContadorCalorias com formulário de registro e barras de progresso
+- [ ] Mostrar total do dia vs meta (calorias, proteína, carbs, gordura)
+- [ ] Entrada no menu lateral e rota
+
+## Contador Diário de Calorias e Proteína
+- [x] Tabela food_logs no banco (id, userId, date, meal, name, calories, protein, carbs, fat, quantity)
+- [x] Procedures tRPC: getByDate, add, delete
+- [x] Página ContadorCalorias com barras de progresso de calorias, proteína, carbs e gordura
+- [x] Cálculo automático de metas diárias (TMB + TDEE) baseado em peso/altura/idade/gênero/objetivo
+- [x] Navegação entre dias (ontem, hoje, amanhã)
+- [x] Formulário de registro por refeição (café da manhã, lanche, almoço, etc.)
+- [x] Entrada "Contador de Calorias" no menu lateral

@@ -71,6 +71,13 @@
       "when": 1777325744629,
       "tag": "0009_quick_spyke",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1777335061703,
+      "tag": "0010_careless_nightshade",
+      "breakpoints": true
     }
   ]
 }

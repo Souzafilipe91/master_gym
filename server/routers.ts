@@ -699,5 +699,35 @@ Use emojis para tornar mais visual. Seja prático e objetivo.`;
       return await db.getLatestDiet(ctx.user.id);
     }),
   }),
+
+  // ─── Contador de Calorias ─────────────────────────────────────────────────
+  foodLogs: router({
+    getByDate: protectedProcedure
+      .input(z.object({ date: z.string() })) // YYYY-MM-DD
+      .query(async ({ ctx, input }) => {
+        return await db.getFoodLogsByDate(ctx.user.id, input.date);
+      }),
+    add: protectedProcedure
+      .input(z.object({
+        date: z.string(),
+        meal: z.enum(["cafe_manha", "lanche_manha", "almoco", "lanche_tarde", "jantar", "ceia"]),
+        name: z.string().min(1),
+        calories: z.number().min(0),
+        protein: z.number().min(0),
+        carbs: z.number().min(0),
+        fat: z.number().min(0),
+        quantity: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.addFoodLog({ userId: ctx.user.id, ...input });
+        return { success: true };
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deleteFoodLog(input.id, ctx.user.id);
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

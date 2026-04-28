@@ -18,7 +18,8 @@ import {
   Home,
   Video,
   BookOpen,
-  Salad
+  Salad,
+  Flame
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -94,6 +95,11 @@ const menuItems = [
     title: "Dieta",
     href: "/dieta",
     icon: Salad,
+  },
+  {
+    title: "Contador de Calorias",
+    href: "/contador-calorias",
+    icon: Flame,
   },
   {
     title: "Configurações",
