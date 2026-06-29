@@ -109,7 +109,7 @@ export const appRouter = router({
           userId: ctx.user.id,
           workoutTypeId: input.workoutTypeId,
           cycleId: input.cycleId,
-          workoutDate: new Date(input.workoutDate),
+          workoutDate: input.workoutDate,
           completed: false,
           notes: input.notes,
         });
@@ -184,7 +184,7 @@ export const appRouter = router({
         return await db.createWeightLog({
           userId: ctx.user.id,
           weight: input.weight,
-          logDate: new Date(input.logDate),
+          logDate: input.logDate,
           notes: input.notes,
         });
       }),
@@ -213,7 +213,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         return await db.createCardioLog({
           userId: ctx.user.id,
-          cardioDate: new Date(input.cardioDate),
+          cardioDate: input.cardioDate,
           duration: input.duration,
           type: input.type,
           intensity: input.intensity,

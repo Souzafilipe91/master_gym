@@ -1,347 +1,308 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, date } from "drizzle-orm/mysql-core";
+import {
+  boolean,
+  date,
+  decimal,
+  integer,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
 
-/**
- * Core user table backing auth flow.
- */
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: varchar("role", { length: 10 }).notNull().default("user"),
   currentWeight: decimal("currentWeight", { precision: 5, scale: 2 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-/**
- * Tabela de anamnese dos usuários
- */
-export const anamneses = mysqlTable("anamneses", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  // Dados pessoais
-  age: int("age"),
+export const anamneses = pgTable("anamneses", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  age: integer("age"),
   height: varchar("height", { length: 10 }),
   currentWeight: varchar("currentWeight", { length: 10 }),
   targetWeight: varchar("targetWeight", { length: 10 }),
   gender: varchar("gender", { length: 20 }),
-  // Objetivos
   primaryGoal: text("primaryGoal"),
   secondaryGoals: text("secondaryGoals"),
-  // Histórico de treino
   trainingExperience: text("trainingExperience"),
   currentTrainingFrequency: varchar("currentTrainingFrequency", { length: 50 }),
   previousInjuries: text("previousInjuries"),
-  // Restrições e limitações
   medicalRestrictions: text("medicalRestrictions"),
   exerciseRestrictions: text("exerciseRestrictions"),
-  // Disponibilidade
   availableDays: text("availableDays"),
   sessionDuration: varchar("sessionDuration", { length: 50 }),
-  // Estilo de vida
   occupation: varchar("occupation", { length: 100 }),
   activityLevel: varchar("activityLevel", { length: 50 }),
   sleepHours: varchar("sleepHours", { length: 20 }),
   stressLevel: varchar("stressLevel", { length: 20 }),
-  // Nutrição
   dietType: varchar("dietType", { length: 50 }),
   supplementation: text("supplementation"),
-  // Medidas corporais
   chest: varchar("chest", { length: 10 }),
   waist: varchar("waist", { length: 10 }),
   hips: varchar("hips", { length: 10 }),
   thigh: varchar("thigh", { length: 10 }),
   arm: varchar("arm", { length: 10 }),
   bodyFat: varchar("bodyFat", { length: 10 }),
-  // Observações
   additionalNotes: text("additionalNotes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
-
 export type Anamnese = typeof anamneses.$inferSelect;
 export type InsertAnamnese = typeof anamneses.$inferInsert;
 
-/**
- * Programa Anual (4 ciclos de 12 semanas cada)
- */
-export const cycles = mysqlTable("cycles", {
-  id: int("id").autoincrement().primaryKey(),
-  cycleNumber: int("cycleNumber").notNull(), // 1, 2, 3, 4
+export const cycles = pgTable("cycles", {
+  id: serial("id").primaryKey(),
+  cycleNumber: integer("cycleNumber").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  startWeek: int("startWeek").notNull(),
-  endWeek: int("endWeek").notNull(),
+  startWeek: integer("startWeek").notNull(),
+  endWeek: integer("endWeek").notNull(),
   objective: text("objective").notNull(),
   focus: varchar("focus", { length: 255 }).notNull(),
   description: text("description"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type Cycle = typeof cycles.$inferSelect;
 export type InsertCycle = typeof cycles.$inferInsert;
 
-/**
- * Tipos de treino (A, B, C, D)
- */
-export const workoutTypes = mysqlTable("workout_types", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 10 }).notNull().unique(), // A, B, C, D
+export const workoutTypes = pgTable("workout_types", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 10 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
-  duration: int("duration").notNull(), // em minutos
+  duration: integer("duration").notNull(),
   description: text("description"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type WorkoutType = typeof workoutTypes.$inferSelect;
 export type InsertWorkoutType = typeof workoutTypes.$inferInsert;
 
-/**
- * Grupos musculares
- */
-export const muscleGroups = mysqlTable("muscle_groups", {
-  id: int("id").autoincrement().primaryKey(),
+export const muscleGroups = pgTable("muscle_groups", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull().unique(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type MuscleGroup = typeof muscleGroups.$inferSelect;
 export type InsertMuscleGroup = typeof muscleGroups.$inferInsert;
 
-/**
- * Biblioteca de exercícios
- */
-export const exercises = mysqlTable("exercises", {
-  id: int("id").autoincrement().primaryKey(),
+export const exercises = pgTable("exercises", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  muscleGroupId: int("muscleGroupId").notNull(),
+  muscleGroupId: integer("muscleGroupId").notNull(),
   description: text("description"),
   videoUrl: varchar("videoUrl", { length: 512 }),
   imageUrl: varchar("imageUrl", { length: 512 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type Exercise = typeof exercises.$inferSelect;
 export type InsertExercise = typeof exercises.$inferInsert;
 
-/**
- * Exercícios do treino (template de exercícios para cada tipo de treino em cada ciclo)
- */
-export const workoutExercises = mysqlTable("workout_exercises", {
-  id: int("id").autoincrement().primaryKey(),
-  cycleId: int("cycleId").notNull(),
-  workoutTypeId: int("workoutTypeId").notNull(),
-  exerciseId: int("exerciseId").notNull(),
-  orderIndex: int("orderIndex").notNull(), // ordem do exercício no treino
-  sets: int("sets").notNull(),
-  reps: varchar("reps", { length: 100 }).notNull(), // ex: "3x10-12 + 1x4+4+4"
+export const workoutExercises = pgTable("workout_exercises", {
+  id: serial("id").primaryKey(),
+  cycleId: integer("cycleId").notNull(),
+  workoutTypeId: integer("workoutTypeId").notNull(),
+  exerciseId: integer("exerciseId").notNull(),
+  orderIndex: integer("orderIndex").notNull(),
+  sets: integer("sets").notNull(),
+  reps: varchar("reps", { length: 100 }).notNull(),
   initialLoad: decimal("initialLoad", { precision: 6, scale: 2 }).notNull(),
-  loadProgression: decimal("loadProgression", { precision: 5, scale: 2 }).notNull(), // kg a adicionar a cada progressão
-  technique: varchar("technique", { length: 255 }), // ex: "Cluster set", "Drop set"
-  restTime: varchar("restTime", { length: 50 }), // ex: "90s", "2 min"
+  loadProgression: decimal("loadProgression", { precision: 5, scale: 2 }).notNull(),
+  technique: varchar("technique", { length: 255 }),
+  restTime: varchar("restTime", { length: 50 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type WorkoutExercise = typeof workoutExercises.$inferSelect;
 export type InsertWorkoutExercise = typeof workoutExercises.$inferInsert;
 
-/**
- * Registro de treinos realizados pelo usuário
- */
-export const workoutLogs = mysqlTable("workout_logs", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  workoutTypeId: int("workoutTypeId").notNull(),
-  cycleId: int("cycleId").notNull(),
+export const workoutLogs = pgTable("workout_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  workoutTypeId: integer("workoutTypeId").notNull(),
+  cycleId: integer("cycleId").notNull(),
   workoutDate: date("workoutDate").notNull(),
   completed: boolean("completed").default(false).notNull(),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
-
 export type WorkoutLog = typeof workoutLogs.$inferSelect;
 export type InsertWorkoutLog = typeof workoutLogs.$inferInsert;
 
-/**
- * Registro de exercícios realizados em cada treino
- */
-export const exerciseLogs = mysqlTable("exercise_logs", {
-  id: int("id").autoincrement().primaryKey(),
-  workoutLogId: int("workoutLogId").notNull(),
-  exerciseId: int("exerciseId").notNull(),
-  setNumber: int("setNumber").notNull(), // número da série (1, 2, 3, etc)
-  reps: int("reps").notNull(), // repetições executadas
-  load: decimal("load", { precision: 6, scale: 2 }).notNull(), // carga utilizada
+export const exerciseLogs = pgTable("exercise_logs", {
+  id: serial("id").primaryKey(),
+  workoutLogId: integer("workoutLogId").notNull(),
+  exerciseId: integer("exerciseId").notNull(),
+  setNumber: integer("setNumber").notNull(),
+  reps: integer("reps").notNull(),
+  load: decimal("load", { precision: 6, scale: 2 }).notNull(),
   completed: boolean("completed").default(true).notNull(),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type ExerciseLog = typeof exerciseLogs.$inferSelect;
 export type InsertExerciseLog = typeof exerciseLogs.$inferInsert;
 
-/**
- * Histórico de peso corporal do usuário
- */
-export const weightLogs = mysqlTable("weight_logs", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const weightLogs = pgTable("weight_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   weight: decimal("weight", { precision: 5, scale: 2 }).notNull(),
   logDate: date("logDate").notNull(),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type WeightLog = typeof weightLogs.$inferSelect;
 export type InsertWeightLog = typeof weightLogs.$inferInsert;
 
-/**
- * Recomendações de cardio por ciclo
- */
-export const cardioRecommendations = mysqlTable("cardio_recommendations", {
-  id: int("id").autoincrement().primaryKey(),
-  cycleId: int("cycleId").notNull(),
-  frequency: varchar("frequency", { length: 100 }).notNull(), // ex: "4x na semana"
-  duration: varchar("duration", { length: 100 }).notNull(), // ex: "30 minutos"
-  intensity: varchar("intensity", { length: 100 }).notNull(), // ex: "Baixa (LISS)"
-  timing: varchar("timing", { length: 255 }), // ex: "Em jejum ou após treinos"
+export const cardioRecommendations = pgTable("cardio_recommendations", {
+  id: serial("id").primaryKey(),
+  cycleId: integer("cycleId").notNull(),
+  frequency: varchar("frequency", { length: 100 }).notNull(),
+  duration: varchar("duration", { length: 100 }).notNull(),
+  intensity: varchar("intensity", { length: 100 }).notNull(),
+  timing: varchar("timing", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type CardioRecommendation = typeof cardioRecommendations.$inferSelect;
 export type InsertCardioRecommendation = typeof cardioRecommendations.$inferInsert;
 
-/**
- * Registro de sessões de cardio realizadas
- */
-export const cardioLogs = mysqlTable("cardio_logs", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const cardioLogs = pgTable("cardio_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   cardioDate: date("cardioDate").notNull(),
-  duration: int("duration").notNull(), // em minutos
-  type: varchar("type", { length: 100 }).notNull(), // ex: "LISS", "HIIT", "Corrida", "Bicicleta"
-  intensity: varchar("intensity", { length: 50 }), // ex: "Baixa", "Moderada", "Alta"
+  duration: integer("duration").notNull(),
+  type: varchar("type", { length: 100 }).notNull(),
+  intensity: varchar("intensity", { length: 50 }),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type CardioLog = typeof cardioLogs.$inferSelect;
 export type InsertCardioLog = typeof cardioLogs.$inferInsert;
 
-/**
- * Conquistas/Badges disponíveis
- */
-export const achievements = mysqlTable("achievements", {
-  id: int("id").autoincrement().primaryKey(),
+export const achievementCategoryEnum = pgEnum("achievement_category", [
+  "frequency",
+  "milestone",
+  "pr",
+  "streak",
+]);
+
+export const achievements = pgTable("achievements", {
+  id: serial("id").primaryKey(),
   code: varchar("code", { length: 50 }).notNull().unique(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description").notNull(),
-  icon: varchar("icon", { length: 50 }).notNull(), // nome do ícone lucide
-  category: mysqlEnum("category", ["frequency", "milestone", "pr", "streak"]).notNull(),
-  requirement: int("requirement").notNull(), // valor numérico do requisito
-  points: int("points").notNull().default(10), // pontos ganhos ao desbloquear
+  icon: varchar("icon", { length: 50 }).notNull(),
+  category: achievementCategoryEnum("category").notNull(),
+  requirement: integer("requirement").notNull(),
+  points: integer("points").notNull().default(10),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type Achievement = typeof achievements.$inferSelect;
 export type InsertAchievement = typeof achievements.$inferInsert;
 
-/**
- * Conquistas desbloqueadas pelos usuários
- */
-export const userAchievements = mysqlTable("user_achievements", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  achievementId: int("achievementId").notNull(),
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  achievementId: integer("achievementId").notNull(),
   unlockedAt: timestamp("unlockedAt").defaultNow().notNull(),
-  progress: int("progress").default(0), // progresso atual (para conquistas progressivas)
+  progress: integer("progress").default(0),
 });
 export type UserAchievement = typeof userAchievements.$inferSelect;
 export type InsertUserAchievement = typeof userAchievements.$inferInsert;
 
-/**
- * Sessões de treino (para tracking de tempo e execução)
- */
-export const workoutSessions = mysqlTable("workout_sessions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  workoutLogId: int("workoutLogId").notNull(),
+export const workoutSessions = pgTable("workout_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  workoutLogId: integer("workoutLogId").notNull(),
   startTime: timestamp("startTime").notNull(),
   endTime: timestamp("endTime"),
-  duration: int("duration"), // em minutos
+  duration: integer("duration"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type WorkoutSession = typeof workoutSessions.$inferSelect;
 export type InsertWorkoutSession = typeof workoutSessions.$inferInsert;
 
-/**
- * Treinos gerados por IA (calistenia e copiados de vídeos)
- */
-export const savedAiWorkouts = mysqlTable("saved_ai_workouts", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  type: mysqlEnum("type", ["calistenia", "copied", "musculacao"]).notNull(),
+export const savedAiWorkoutTypeEnum = pgEnum("saved_ai_workout_type", [
+  "calistenia",
+  "copied",
+  "musculacao",
+]);
+
+export const savedAiWorkouts = pgTable("saved_ai_workouts", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  type: savedAiWorkoutTypeEnum("type").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
-  content: text("content").notNull(), // markdown do treino gerado
-  // Para treinos copiados
+  content: text("content").notNull(),
   athleteName: varchar("athleteName", { length: 255 }),
   videoUrl: varchar("videoUrl", { length: 512 }),
-  videoAnalysis: text("videoAnalysis"), // análise bruta do vídeo
-  // Para treinos de calistenia
+  videoAnalysis: text("videoAnalysis"),
   focus: varchar("focus", { length: 100 }),
-  duration: int("duration"),
+  duration: integer("duration"),
   difficulty: varchar("difficulty", { length: 50 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type SavedAiWorkout = typeof savedAiWorkouts.$inferSelect;
 export type InsertSavedAiWorkout = typeof savedAiWorkouts.$inferInsert;
 
-/**
- * Dietas geradas por IA
- */
-export const savedDiets = mysqlTable("saved_diets", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const dietObjectiveEnum = pgEnum("diet_objective", [
+  "bulking",
+  "cutting",
+  "manutencao",
+  "recomposicao",
+]);
+
+export const savedDiets = pgTable("saved_diets", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
-  objective: mysqlEnum("objective", ["bulking", "cutting", "manutencao", "recomposicao"]).notNull(),
-  content: text("content").notNull(), // markdown da dieta gerada
-  // Dados usados na geração
+  objective: dietObjectiveEnum("objective").notNull(),
+  content: text("content").notNull(),
   weight: varchar("weight", { length: 10 }),
   height: varchar("height", { length: 10 }),
-  age: int("age"),
+  age: integer("age"),
   gender: varchar("gender", { length: 20 }),
   activityLevel: varchar("activityLevel", { length: 50 }),
   restrictions: text("restrictions"),
   preferences: text("preferences"),
-  // Macros calculados
-  targetCalories: int("targetCalories"),
-  targetProtein: int("targetProtein"),
-  targetCarbs: int("targetCarbs"),
-  targetFat: int("targetFat"),
+  targetCalories: integer("targetCalories"),
+  targetProtein: integer("targetProtein"),
+  targetCarbs: integer("targetCarbs"),
+  targetFat: integer("targetFat"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type SavedDiet = typeof savedDiets.$inferSelect;
 export type InsertSavedDiet = typeof savedDiets.$inferInsert;
 
-/**
- * Registros alimentares diários (contador de calorias)
- */
-export const foodLogs = mysqlTable("food_logs", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
-  meal: mysqlEnum("meal", ["cafe_manha", "lanche_manha", "almoco", "lanche_tarde", "jantar", "ceia"]).notNull().default("almoco"),
+export const mealEnum = pgEnum("meal_type", [
+  "cafe_manha",
+  "lanche_manha",
+  "almoco",
+  "lanche_tarde",
+  "jantar",
+  "ceia",
+]);
+
+export const foodLogs = pgTable("food_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  meal: mealEnum("meal").notNull().default("almoco"),
   name: varchar("name", { length: 255 }).notNull(),
-  calories: int("calories").notNull().default(0),
+  calories: integer("calories").notNull().default(0),
   protein: decimal("protein", { precision: 6, scale: 1 }).notNull().default("0"),
   carbs: decimal("carbs", { precision: 6, scale: 1 }).notNull().default("0"),
   fat: decimal("fat", { precision: 6, scale: 1 }).notNull().default("0"),
-  quantity: varchar("quantity", { length: 50 }), // ex: "100g", "1 unidade"
+  quantity: varchar("quantity", { length: 50 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type FoodLog = typeof foodLogs.$inferSelect;
