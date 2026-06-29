@@ -19,7 +19,8 @@ import {
   Video,
   BookOpen,
   Salad,
-  Flame
+  Flame,
+  MessageCircle
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -35,6 +36,11 @@ const menuItems = [
     title: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Coach IA",
+    href: "/chat",
+    icon: MessageCircle,
   },
   {
     title: "Meus Treinos",

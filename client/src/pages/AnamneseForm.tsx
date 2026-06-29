@@ -6,12 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { ClipboardList, Save } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 export default function AnamneseForm() {
   const [, setLocation] = useLocation();
+  const { data: existing } = trpc.anamnese.getMy.useQuery();
+  const isEdit = !!existing;
+
   const createMutation = trpc.anamnese.create.useMutation({
     onSuccess: () => {
       toast.success("Anamnese salva com sucesso!");
@@ -19,6 +22,16 @@ export default function AnamneseForm() {
     },
     onError: (error) => {
       toast.error(`Erro ao salvar anamnese: ${error.message}`);
+    },
+  });
+
+  const updateMutation = trpc.anamnese.update.useMutation({
+    onSuccess: () => {
+      toast.success("Anamnese atualizada com sucesso!");
+      setLocation("/anamnese");
+    },
+    onError: (error) => {
+      toast.error(`Erro ao atualizar anamnese: ${error.message}`);
     },
   });
 
@@ -52,17 +65,56 @@ export default function AnamneseForm() {
     additionalNotes: "",
   });
 
+  // Pré-popular campos ao editar
+  useEffect(() => {
+    if (!existing) return;
+    setFormData({
+      age: existing.age?.toString() ?? "",
+      height: existing.height ?? "",
+      currentWeight: existing.currentWeight ?? "",
+      targetWeight: existing.targetWeight ?? "",
+      gender: existing.gender ?? "",
+      primaryGoal: existing.primaryGoal ?? "",
+      secondaryGoals: existing.secondaryGoals ?? "",
+      trainingExperience: existing.trainingExperience ?? "",
+      currentTrainingFrequency: existing.currentTrainingFrequency ?? "",
+      previousInjuries: existing.previousInjuries ?? "",
+      medicalRestrictions: existing.medicalRestrictions ?? "",
+      exerciseRestrictions: existing.exerciseRestrictions ?? "",
+      availableDays: existing.availableDays ?? "",
+      sessionDuration: existing.sessionDuration ?? "",
+      occupation: existing.occupation ?? "",
+      activityLevel: existing.activityLevel ?? "",
+      sleepHours: existing.sleepHours ?? "",
+      stressLevel: existing.stressLevel ?? "",
+      dietType: existing.dietType ?? "",
+      supplementation: existing.supplementation ?? "",
+      chest: existing.chest ?? "",
+      waist: existing.waist ?? "",
+      hips: existing.hips ?? "",
+      thigh: existing.thigh ?? "",
+      arm: existing.arm ?? "",
+      bodyFat: existing.bodyFat ?? "",
+      additionalNotes: existing.additionalNotes ?? "",
+    });
+  }, [existing]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Converter campos numéricos
+
     const dataToSubmit = {
       ...formData,
       age: formData.age ? parseInt(formData.age) : undefined,
     };
 
-    createMutation.mutate(dataToSubmit);
+    if (isEdit) {
+      updateMutation.mutate(dataToSubmit);
+    } else {
+      createMutation.mutate(dataToSubmit);
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -77,9 +129,9 @@ export default function AnamneseForm() {
             <ClipboardList className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Preencher Anamnese</h1>
+            <h1 className="text-2xl font-bold">{isEdit ? "Editar Anamnese" : "Preencher Anamnese"}</h1>
             <p className="text-sm text-muted-foreground">
-              Complete suas informações para receber um treino personalizado
+              {isEdit ? "Atualize suas informações para personalizar treino e dieta" : "Complete suas informações para receber um treino personalizado"}
             </p>
           </div>
         </div>
@@ -492,9 +544,9 @@ export default function AnamneseForm() {
             <Button type="button" variant="outline" onClick={() => setLocation("/")}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={createMutation.isPending}>
+            <Button type="submit" disabled={isPending}>
               <Save className="w-4 h-4 mr-2" />
-              {createMutation.isPending ? "Salvando..." : "Salvar Anamnese"}
+              {isPending ? "Salvando..." : isEdit ? "Atualizar Anamnese" : "Salvar Anamnese"}
             </Button>
           </div>
         </form>

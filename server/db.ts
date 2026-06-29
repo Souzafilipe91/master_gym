@@ -346,9 +346,15 @@ export async function getAnamneseByUserId(userId: number) {
 export async function createAnamnese(data: InsertAnamnese) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const result = await db.insert(anamneses).values(data);
   return result;
+}
+
+export async function updateAnamnese(userId: number, data: Partial<InsertAnamnese>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.update(anamneses).set(data).where(eq(anamneses.userId, userId));
 }
 
 // Achievements

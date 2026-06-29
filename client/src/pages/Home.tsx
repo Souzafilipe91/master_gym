@@ -60,13 +60,23 @@ export default function Home() {
                   <p className="text-sm text-muted-foreground">A, B, C, D</p>
                 </div>
               </div>
-              <div className="text-center pt-4">
+              <div className="text-center pt-4 space-y-3">
                 <Button asChild size="lg" className="w-full md:w-auto">
                   <a href={getLoginUrl()}>
                     <User className="w-4 h-4 mr-2" />
-                    Entrar na Plataforma
+                    Entrar com Google
                   </a>
                 </Button>
+                {/* Botão de dev — visível apenas em localhost */}
+                {window.location.hostname === "localhost" && (
+                  <div>
+                    <Button asChild size="lg" variant="outline" className="w-full md:w-auto border-dashed">
+                      <a href="/api/auth/dev-login">
+                        Entrar (modo dev — sem Google)
+                      </a>
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

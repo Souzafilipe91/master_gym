@@ -73,6 +73,40 @@ async function getGoogleUserInfo(accessToken: string) {
 }
 
 export function registerOAuthRoutes(app: Express) {
+  // Login de desenvolvimento — só funciona quando NODE_ENV=development
+  app.get("/api/auth/dev-login", async (req: Request, res: Response) => {
+    if (ENV.isProduction) {
+      res.status(403).json({ error: "Disponível apenas em desenvolvimento" });
+      return;
+    }
+
+    const devOpenId = "dev:local-user";
+    const devName = "Filipe (Dev)";
+    const devEmail = "dev@localhost";
+
+    await db.upsertUser({
+      openId: devOpenId,
+      name: devName,
+      email: devEmail,
+      loginMethod: "google",
+      lastSignedIn: new Date(),
+    });
+
+    const sessionToken = await sdk.createSessionToken(devOpenId, {
+      name: devName,
+      expiresInMs: ONE_YEAR_MS,
+    });
+
+    res.cookie(COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+      secure: false,
+      maxAge: ONE_YEAR_MS,
+    });
+    res.redirect(302, "/");
+  });
+
   // Inicia login com Google
   app.get("/api/auth/google", (req: Request, res: Response) => {
     if (!ENV.googleClientId) {

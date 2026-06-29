@@ -311,14 +311,13 @@ export default function ExecutarTreino() {
   const getCurrentSetData = () => {
     const exerciseId = currentExercise?.exerciseId;
     if (!exerciseId) return { reps: 10, load: 0 };
-    
+
     const data = exerciseData[exerciseId];
     if (!data || !data.sets[currentSet - 1]) {
-      // Iniciar com 0 para que o usuário insira a carga atual
-      return { 
-        reps: 10, 
-        load: 0 
-      };
+      // Pré-popular com carga do último treino registrado
+      const lastLoad = lastLog ? Number(lastLog.load) : 0;
+      const lastReps = lastLog ? Number(lastLog.reps) : 10;
+      return { reps: lastReps, load: lastLoad };
     }
     return data.sets[currentSet - 1];
   };

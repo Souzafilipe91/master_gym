@@ -6,6 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { updateUserWeight } from "./db";
 import { invokeLLM } from "./_core/llm";
+import { buildPersonaPrompt } from "./persona";
 
 export const appRouter = router({
   system: systemRouter,
@@ -263,6 +264,40 @@ export const appRouter = router({
           ...input,
         });
       }),
+    update: protectedProcedure
+      .input(z.object({
+        age: z.number().optional(),
+        height: z.string().optional(),
+        currentWeight: z.string().optional(),
+        targetWeight: z.string().optional(),
+        gender: z.string().optional(),
+        primaryGoal: z.string().optional(),
+        secondaryGoals: z.string().optional(),
+        trainingExperience: z.string().optional(),
+        currentTrainingFrequency: z.string().optional(),
+        previousInjuries: z.string().optional(),
+        medicalRestrictions: z.string().optional(),
+        exerciseRestrictions: z.string().optional(),
+        availableDays: z.string().optional(),
+        sessionDuration: z.string().optional(),
+        occupation: z.string().optional(),
+        activityLevel: z.string().optional(),
+        sleepHours: z.string().optional(),
+        stressLevel: z.string().optional(),
+        dietType: z.string().optional(),
+        supplementation: z.string().optional(),
+        chest: z.string().optional(),
+        waist: z.string().optional(),
+        hips: z.string().optional(),
+        thigh: z.string().optional(),
+        arm: z.string().optional(),
+        bodyFat: z.string().optional(),
+        additionalNotes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.updateAnamnese(ctx.user.id, input);
+        return { success: true };
+      }),
     generateWorkout: protectedProcedure
       .input(z.object({
         anamneseId: z.number().optional(),
@@ -334,10 +369,10 @@ Estrutura do programa:
 
 Não use tabelas, apenas o formato de cabeçalho ### para cada exercício. Formate em Markdown com seções claras.`;
 
-        // Chamar LLM
+        // Chamar LLM com persona personalizada
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "Você é um personal trainer especializado e experiente. Crie programas de treino personalizados, detalhados e seguros baseados na anamnese do aluno." },
+            { role: "system", content: buildPersonaPrompt(anamnese) },
             { role: "user", content: prompt },
           ],
         });
@@ -367,6 +402,11 @@ Não use tabelas, apenas o formato de cabeçalho ### para cada exercício. Forma
         difficulty: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Apagar treinos anteriores do mesmo tipo para não acumular lixo
+        const existing = await db.getSavedAiWorkouts(ctx.user.id, input.type);
+        for (const w of existing) {
+          await db.deleteSavedAiWorkout(w.id, ctx.user.id);
+        }
         const saved = await db.saveAiWorkout({ userId: ctx.user.id, ...input });
         return { success: true, id: saved.id };
       }),
@@ -443,7 +483,7 @@ Use emojis para deixar mais visual e motivador. Não use tabelas, apenas o forma
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "Você é um especialista em calistenia, treino funcional e bodyweight training. Crie treinos seguros, progressivos e adaptados ao nível do aluno." },
+            { role: "system", content: buildPersonaPrompt(anamnese) },
             { role: "user", content: prompt },
           ],
         });
@@ -547,7 +587,7 @@ Não use tabelas, apenas o formato de cabeçalho ### para cada exercício. Use e
 
         const adaptationResponse = await invokeLLM({
           messages: [
-            { role: "system", content: "Você é um personal trainer especializado em adaptar treinos de atletas de alto nível para praticantes comuns, respeitando limitações individuais." },
+            { role: "system", content: buildPersonaPrompt(anamnese) },
             { role: "user", content: adaptationPrompt },
           ],
         });
@@ -646,9 +686,10 @@ Estrutura completa da resposta:
 5. Seção "## Substituições" com opções para trocar alimentos principais
 
 Use emojis para tornar mais visual. Seja prático e objetivo.`;
+        const anamnese = await db.getAnamneseByUserId(ctx.user.id).catch(() => null);
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "Você é um nutricionista esportivo especializado em planos alimentares para praticantes de musculação. Gere planos detalhados, práticos e baseados em alimentos acessíveis no Brasil." },
+            { role: "system", content: buildPersonaPrompt(anamnese) },
             { role: "user", content: prompt },
           ],
         });
@@ -727,6 +768,30 @@ Use emojis para tornar mais visual. Seja prático e objetivo.`;
       .mutation(async ({ ctx, input }) => {
         await db.deleteFoodLog(input.id, ctx.user.id);
         return { success: true };
+      }),
+  }),
+  // ─── Chat com Personal/Nutricionista ────────────────────────────────────────
+  chat: router({
+    sendMessage: protectedProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const anamnese = await db.getAnamneseByUserId(ctx.user.id).catch(() => null);
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: buildPersonaPrompt(anamnese) },
+            ...input.messages,
+          ],
+          maxTokens: 2048,
+        });
+
+        const reply = response.choices[0]?.message?.content || "Desculpe, não consegui gerar uma resposta.";
+        return { reply };
       }),
   }),
 });

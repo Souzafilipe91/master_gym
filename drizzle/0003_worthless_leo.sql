@@ -1,1 +1,0 @@
-ALTER TABLE `exercises` ADD `gifUrl` varchar(512);

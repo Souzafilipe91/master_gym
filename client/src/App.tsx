@@ -28,6 +28,7 @@ import ExecutarTreinoIA from "./pages/ExecutarTreinoIA";
 import GerarDieta from "./pages/GerarDieta";
 import MinhasDietas from "./pages/MinhasDietas";
 import ContadorCalorias from "./pages/ContadorCalorias";
+import Chat from "./pages/Chat";
 import { LockScreenWidgetManager } from "./components/LockScreenWidgetManager";
 
 function Router() {
@@ -45,6 +46,7 @@ function Router() {
         <Route path={"/progresso"} component={Progresso} />
         <Route path={"/anamnese"} component={Anamnese} />
         <Route path={"/anamnese/preencher"} component={AnamneseForm} />
+        <Route path={"/anamnese/editar"} component={AnamneseForm} />
         <Route path={"/gerar-treino"} component={GerarTreino} />
         <Route path={"/treinos"} component={MeusTreinos} />
         <Route path={"/conquistas"} component={Conquistas} />
@@ -60,6 +62,7 @@ function Router() {
         <Route path={"/dieta"} component={MinhasDietas} />
         <Route path={"/dieta/:id"} component={MinhasDietas} />
         <Route path={"/contador-calorias"} component={ContadorCalorias} />
+        <Route path={"/chat"} component={Chat} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

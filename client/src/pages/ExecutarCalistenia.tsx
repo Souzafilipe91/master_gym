@@ -2,16 +2,18 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  ArrowLeft, Play, Pause, SkipForward, CheckCircle2,
-  Timer, Dumbbell, ChevronRight, Trophy, RotateCcw, Home,
-  Info, ChevronDown, ChevronUp
+  ArrowLeft, Check, Clock, SkipForward, List,
+  ChevronRight, Trophy, X, Settings, Maximize, Minimize, TrendingUp,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { requestNotificationPermission, notifyRestEnd } from "@/lib/notifications";
-import { getExerciseDescriptionByName } from "@/components/ExerciseCard";
+import ExerciseCard from "@/components/ExerciseCard";
+import { useHaptic } from "@/hooks/useHaptic";
+import { useFullscreen } from "@/hooks/useFullscreen";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -19,8 +21,9 @@ interface CalisthenicsExercise {
   name: string;
   sets: number;
   reps: string;
-  rest: number; // segundos
+  rest: number;
   notes?: string;
+  description?: string;
 }
 
 interface ParsedWorkout {
@@ -34,22 +37,39 @@ function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
   const lines = markdown.split("\n").map(l => l.trim()).filter(Boolean);
   const exercises: CalisthenicsExercise[] = [];
   let title = "Treino de Calistenia";
+  let currentExercise: Partial<CalisthenicsExercise> | null = null;
+  let descriptionLines: string[] = [];
+
+  const flushExercise = () => {
+    if (currentExercise?.name) {
+      exercises.push({
+        name: currentExercise.name,
+        sets: currentExercise.sets ?? 3,
+        reps: currentExercise.reps ?? "10",
+        rest: currentExercise.rest ?? 60,
+        notes: currentExercise.notes,
+        description: descriptionLines.length > 0 ? descriptionLines.join(" ") : undefined,
+      });
+    }
+    currentExercise = null;
+    descriptionLines = [];
+  };
 
   for (const line of lines) {
-    // Título
     if (line.startsWith("# ")) {
       title = line.replace(/^#\s+/, "");
       continue;
     }
 
-    // Exercício: detecta padrões como "- **Flexão de Braço**: 3x12" ou "**Agachamento**: 4x15"
+    if (line.startsWith("### ")) {
+      flushExercise();
+      currentExercise = { name: line.replace(/^###\s+/, "").replace(/\*+/g, "").trim() };
+      continue;
+    }
+
     const exerciseMatch = line.match(/[-*]?\s*\*{1,2}([^*:]+)\*{0,2}[:\s]+(\d+)x([^\s,.(]+)/i);
     if (exerciseMatch) {
-      const name = exerciseMatch[1].trim();
-      const sets = parseInt(exerciseMatch[2]) || 3;
-      const reps = exerciseMatch[3].trim();
-
-      // Detectar descanso na mesma linha
+      flushExercise();
       const restMatch = line.match(/descanso[:\s]+(\d+)\s*(s|seg|min|minuto)/i);
       let rest = 60;
       if (restMatch) {
@@ -57,19 +77,46 @@ function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
           ? parseInt(restMatch[1]) * 60
           : parseInt(restMatch[1]);
       }
+      currentExercise = {
+        name: exerciseMatch[1].trim(),
+        sets: parseInt(exerciseMatch[2]) || 3,
+        reps: exerciseMatch[3].trim(),
+        rest,
+      };
+      continue;
+    }
 
-      exercises.push({ name, sets, reps, rest });
+    if (currentExercise) {
+      const restLine = line.match(/descanso[:\s]+(\d+)\s*(s|seg|min|minuto)/i);
+      if (restLine) {
+        currentExercise.rest = restLine[2].toLowerCase().startsWith("min")
+          ? parseInt(restLine[1]) * 60
+          : parseInt(restLine[1]);
+        continue;
+      }
+      const setsLine = line.match(/(\d+)\s*[sx×]\s*(\S+)/i);
+      if (setsLine && !currentExercise.sets) {
+        currentExercise.sets = parseInt(setsLine[1]);
+        currentExercise.reps = setsLine[2];
+        continue;
+      }
+      const execLine = line.match(/execu[çc][aã]o[:\s]+(.+)/i);
+      if (execLine) {
+        descriptionLines.push(execLine[1].trim());
+        continue;
+      }
+      const notesLine = line.match(/dica[s]?[:\s]+(.+)/i);
+      if (notesLine) {
+        currentExercise.notes = notesLine[1].trim();
+        continue;
+      }
     }
   }
+  flushExercise();
 
-  // Fallback: se não parseou nada, cria exercícios genéricos baseados no texto
   if (exercises.length === 0) {
-    const genericNames = [
-      "Aquecimento", "Exercício Principal 1", "Exercício Principal 2",
-      "Exercício Principal 3", "Exercício Complementar", "Alongamento Final"
-    ];
-    genericNames.forEach((name, i) => {
-      exercises.push({ name, sets: i === 0 || i === genericNames.length - 1 ? 1 : 3, reps: "10-12", rest: 60 });
+    ["Agachamento", "Flexão de Braço", "Prancha", "Burpee", "Mountain Climber", "Afundo"].forEach((name, i) => {
+      exercises.push({ name, sets: i === 2 || i === 4 ? 3 : 3, reps: i === 2 ? "30s" : "10-12", rest: 60 });
     });
   }
 
@@ -86,41 +133,63 @@ interface ExecutarCalisteniaProps {
 
 export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFinish }: ExecutarCalisteniaProps) {
   const [, navigate] = useLocation();
-
-  // Carregar configuração de descanso do usuário
-  const getUserRestTime = () => {
-    const saved = localStorage.getItem("gym-rest-time");
-    return saved ? parseInt(saved) : null;
-  };
+  const haptic = useHaptic();
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
 
   const parsed = parseWorkoutMarkdown(workoutContent);
   const exercises = parsed.exercises;
 
+  // Chave única de localStorage para este treino
+  const storageKey = `calistenia-progress-${workoutTitle.replace(/\s+/g, "-").toLowerCase()}`;
+
   const [currentExIdx, setCurrentExIdx] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   const [completedSets, setCompletedSets] = useState<Record<string, boolean>>({});
+  const [repsData, setRepsData] = useState<Record<number, number[]>>({});
   const [isResting, setIsResting] = useState(false);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const [restTimerRunning, setRestTimerRunning] = useState(false);
   const [finished, setFinished] = useState(false);
   const [totalCompleted, setTotalCompleted] = useState(0);
-  const [showExerciseDesc, setShowExerciseDesc] = useState(false);
+  const [showExerciseList, setShowExerciseList] = useState(false);
+  const [showEndDialog, setShowEndDialog] = useState(false);
+  const [prExercise, setPrExercise] = useState<string | null>(null);
+  const [workoutStartTime] = useState(new Date());
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Resetar descrição ao mudar de exercício
-  useEffect(() => { setShowExerciseDesc(false); }, [currentExIdx]);
+  // ─── Restaurar estado salvo ───────────────────────────────────────────────
 
-  const currentExercise = exercises[currentExIdx];
-  const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
-  const progress = (totalCompleted / totalSets) * 100;
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        setCurrentExIdx(p.currentExIdx ?? 0);
+        setCurrentSet(p.currentSet ?? 1);
+        setCompletedSets(p.completedSets ?? {});
+        setRepsData(p.repsData ?? {});
+        setTotalCompleted(p.totalCompleted ?? 0);
+      } catch { /* ignora estado corrompido */ }
+    }
+  }, [storageKey]);
 
-  // Solicitar permissão de notificação ao montar
+  // ─── Salvar estado automaticamente ───────────────────────────────────────
+
+  useEffect(() => {
+    if (finished) return;
+    localStorage.setItem(storageKey, JSON.stringify({
+      currentExIdx, currentSet, completedSets, repsData, totalCompleted,
+      timestamp: new Date().toISOString(),
+    }));
+  }, [currentExIdx, currentSet, completedSets, repsData, totalCompleted, finished, storageKey]);
+
   useEffect(() => {
     requestNotificationPermission();
   }, []);
 
-  // Timer de descanso
+  // ─── Timer de descanso ────────────────────────────────────────────────────
+
   useEffect(() => {
     if (restTimerRunning && restTimeLeft > 0) {
       timerRef.current = setInterval(() => {
@@ -130,6 +199,7 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
             setRestTimerRunning(false);
             setIsResting(false);
             notifyRestEnd();
+            haptic.restEnd();
             toast.success("Descanso terminado! Próxima série.");
             return 0;
           }
@@ -137,17 +207,20 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
         });
       }, 1000);
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [restTimerRunning]);
 
-  const startRest = useCallback((seconds: number) => {
-    const userRest = getUserRestTime();
-    const restDuration = userRest || seconds;
-    setRestTimeLeft(restDuration);
+  const getUserRestTime = () => {
+    const saved = localStorage.getItem("gym-rest-time-seconds");
+    return saved && !isNaN(parseInt(saved)) ? parseInt(saved) : null;
+  };
+
+  const startRest = useCallback((defaultSeconds: number) => {
+    const duration = getUserRestTime() ?? defaultSeconds;
+    setRestTimeLeft(duration);
     setIsResting(true);
     setRestTimerRunning(true);
+    haptic.restStart();
   }, []);
 
   const skipRest = () => {
@@ -157,40 +230,103 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
     setRestTimeLeft(0);
   };
 
+  // ─── Progresso geral ──────────────────────────────────────────────────────
+
+  const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0);
+  const progress = totalSets > 0 ? (totalCompleted / totalSets) * 100 : 0;
+  const currentExercise = exercises[currentExIdx];
+
+  const getCurrentReps = () => {
+    const d = repsData[currentExIdx];
+    return d?.[currentSet - 1] ?? 0;
+  };
+
+  const setCurrentReps = (value: number) => {
+    setRepsData(prev => {
+      const arr = [...(prev[currentExIdx] ?? [])];
+      arr[currentSet - 1] = value;
+      return { ...prev, [currentExIdx]: arr };
+    });
+  };
+
+  // Melhor resultado de reps anterior (PR por exercício, salvo em localStorage)
+  const getPrKey = (name: string) => `calistenia-pr-${name.toLowerCase()}`;
+  const getPreviousPR = (name: string) => {
+    const v = localStorage.getItem(getPrKey(name));
+    return v ? parseInt(v) : 0;
+  };
+  const savePR = (name: string, reps: number) => {
+    localStorage.setItem(getPrKey(name), reps.toString());
+  };
+
+  // ─── Completar série ──────────────────────────────────────────────────────
+
   const handleCompleteSet = () => {
     const key = `${currentExIdx}-${currentSet}`;
     setCompletedSets(prev => ({ ...prev, [key]: true }));
     setTotalCompleted(prev => prev + 1);
+    haptic.setComplete();
+
+    // Verificar PR (máximo de reps)
+    const reps = getCurrentReps();
+    if (reps > 0) {
+      const prevPR = getPreviousPR(currentExercise.name);
+      if (reps > prevPR) {
+        savePR(currentExercise.name, reps);
+        setPrExercise(currentExercise.name);
+        haptic.success();
+        toast.success(`🏆 Novo PR! ${reps} reps em ${currentExercise.name}!`, {
+          description: prevPR > 0 ? `Anterior: ${prevPR} reps. Superado por ${reps - prevPR}!` : "Primeiro registro!",
+          duration: 5000,
+        });
+      }
+    }
 
     const isLastSet = currentSet >= currentExercise.sets;
     const isLastExercise = currentExIdx >= exercises.length - 1;
 
     if (isLastSet && isLastExercise) {
-      // Treino finalizado
       setFinished(true);
+      localStorage.removeItem(storageKey);
+      haptic.workoutComplete();
       toast.success("🎉 Treino de calistenia concluído!");
       return;
     }
 
     if (isLastSet) {
-      // Próximo exercício
       setCurrentExIdx(prev => prev + 1);
       setCurrentSet(1);
+      haptic.success();
     } else {
-      // Próxima série
       setCurrentSet(prev => prev + 1);
     }
 
-    // Iniciar descanso
     startRest(currentExercise.rest);
   };
 
   const handleSkipExercise = () => {
+    haptic.medium();
     skipRest();
     if (currentExIdx < exercises.length - 1) {
       setCurrentExIdx(prev => prev + 1);
       setCurrentSet(1);
     }
+  };
+
+  const handleJumpToExercise = (idx: number) => {
+    haptic.light();
+    skipRest();
+    setCurrentExIdx(idx);
+    setCurrentSet(1);
+    setShowExerciseList(false);
+  };
+
+  const handleEndEarly = () => {
+    setShowEndDialog(false);
+    localStorage.removeItem(storageKey);
+    toast.success("Treino encerrado e salvo!");
+    if (onFinish) onFinish();
+    else navigate("/calistenia");
   };
 
   const formatTime = (s: number) => {
@@ -200,11 +336,11 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
   };
 
   const userRestTime = getUserRestTime();
-  const restSource = userRestTime ? "configuração pessoal" : "programa";
 
   // ─── Tela de conclusão ────────────────────────────────────────────────────
 
   if (finished) {
+    const duration = Math.round((new Date().getTime() - workoutStartTime.getTime()) / 60000);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md border-primary/30 bg-gradient-to-br from-card to-primary/5">
@@ -215,22 +351,26 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
             <div>
               <h2 className="text-2xl font-bold">Treino Concluído!</h2>
               <p className="text-muted-foreground mt-1">
-                Você completou {totalCompleted} séries de calistenia
+                {workoutTitle}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="bg-card rounded-xl p-4 border border-border">
                 <p className="text-2xl font-bold text-primary">{totalCompleted}</p>
-                <p className="text-xs text-muted-foreground">Séries feitas</p>
+                <p className="text-xs text-muted-foreground">Séries</p>
               </div>
               <div className="bg-card rounded-xl p-4 border border-border">
                 <p className="text-2xl font-bold text-primary">{exercises.length}</p>
                 <p className="text-xs text-muted-foreground">Exercícios</p>
               </div>
+              <div className="bg-card rounded-xl p-4 border border-border">
+                <p className="text-2xl font-bold text-primary">{duration}m</p>
+                <p className="text-xs text-muted-foreground">Duração</p>
+              </div>
             </div>
             <div className="flex flex-col gap-2">
-              <Button onClick={onFinish || (() => navigate("/calistenia"))} className="w-full">
-                <Home className="w-4 h-4 mr-2" />
+              <Button onClick={onFinish ?? (() => navigate("/calistenia"))} className="w-full">
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar à Calistenia
               </Button>
               <Button variant="outline" onClick={() => navigate("/")} className="w-full">
@@ -246,229 +386,283 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
   // ─── Tela de execução ─────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-32">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={onFinish || (() => navigate("/calistenia"))}>
-              <ArrowLeft className="w-5 h-5" />
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container py-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onFinish ?? (() => navigate("/calistenia"))}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Cancelar
             </Button>
-            <div>
-              <h1 className="text-sm font-bold truncate max-w-[180px]">{workoutTitle}</h1>
+
+            <div className="text-center">
+              <h1 className="text-base font-bold truncate max-w-[160px]">{workoutTitle}</h1>
               <p className="text-xs text-muted-foreground">
-                Exercício {currentExIdx + 1}/{exercises.length}
+                Exercício {currentExIdx + 1} de {exercises.length}
               </p>
             </div>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            {totalCompleted}/{totalSets} séries
-          </Badge>
-        </div>
-        {/* Barra de progresso */}
-        <Progress value={progress} className="mt-2 h-1.5" />
-      </header>
 
-      <main className="container py-6 max-w-lg space-y-4">
-        {/* Exercício atual */}
-        <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
-                Exercício {currentExIdx + 1} de {exercises.length}
-              </Badge>
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-muted-foreground h-7"
-                onClick={handleSkipExercise}
+                onClick={() => { setShowExerciseList(true); haptic.light(); }}
+                title="Lista de exercícios"
               >
-                Pular <SkipForward className="w-3 h-3 ml-1" />
+                <List className="w-4 h-4" />
               </Button>
-            </div>
-            <CardTitle className="text-xl mt-2">{currentExercise.name}</CardTitle>
-            {/* Botão Como Fazer */}
-            {(() => {
-              const fallback = getExerciseDescriptionByName(currentExercise.name);
-              const desc = currentExercise.notes || fallback?.description;
-              const tip = fallback?.notes;
-              return (
-                <>
-                  <button
-                    onClick={() => setShowExerciseDesc(p => !p)}
-                    className="mt-1 flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
-                  >
-                    <Info className="w-3.5 h-3.5" />
-                    Como fazer este exercício
-                    {showExerciseDesc ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                  {showExerciseDesc && (
-                    <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                      {desc ? (
-                        <p className="text-sm text-foreground leading-relaxed">{desc}</p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">Descrição não disponível. Consulte um profissional.</p>
-                      )}
-                      {tip && (
-                        <p className="text-xs text-primary mt-2 pt-2 border-t border-primary/20">
-                          <strong>Dica:</strong> {tip}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-            {/* Nota: o IIFE acima não usa hooks, apenas variáveis do escopo do componente */}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Info da série */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-background/60 rounded-xl p-3 text-center border border-border">
-                <p className="text-2xl font-bold text-primary">{currentSet}</p>
-                <p className="text-xs text-muted-foreground">Série atual</p>
-              </div>
-              <div className="bg-background/60 rounded-xl p-3 text-center border border-border">
-                <p className="text-2xl font-bold">{currentExercise.sets}</p>
-                <p className="text-xs text-muted-foreground">Total séries</p>
-              </div>
-              <div className="bg-background/60 rounded-xl p-3 text-center border border-border">
-                <p className="text-2xl font-bold">{currentExercise.reps}</p>
-                <p className="text-xs text-muted-foreground">Repetições</p>
-              </div>
-            </div>
-
-            {/* Botão de completar série */}
-            {!isResting && (
               <Button
-                className="w-full h-14 text-base"
-                onClick={handleCompleteSet}
+                variant="ghost"
+                size="sm"
+                onClick={() => { toggleFullscreen(); haptic.light(); }}
+                title="Tela cheia"
               >
-                <CheckCircle2 className="w-5 h-5 mr-2" />
-                Completar Série {currentSet}/{currentExercise.sets}
+                {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
               </Button>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+
+          {/* Barra de progresso */}
+          <div className="mt-4 w-full bg-muted rounded-full h-2">
+            <div
+              className="bg-primary h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="container py-6">
 
         {/* Timer de descanso */}
         {isResting && (
-          <Card className="border-blue-500/30 bg-blue-500/5">
-            <CardContent className="p-6 text-center space-y-4">
-              <div className="flex items-center justify-center gap-2 text-blue-400">
-                <Timer className="w-5 h-5" />
-                <span className="text-sm font-medium">Descanso</span>
-                <span className="text-xs text-muted-foreground">({restSource})</span>
-              </div>
-
-              <div className="text-6xl font-bold font-mono text-blue-400">
-                {formatTime(restTimeLeft)}
-              </div>
-
-              <Progress
-                value={(1 - restTimeLeft / (getUserRestTime() || currentExercise.rest)) * 100}
-                className="h-2"
-              />
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 border-blue-500/30 text-blue-400"
-                  onClick={() => setRestTimerRunning(prev => !prev)}
-                >
-                  {restTimerRunning ? (
-                    <><Pause className="w-4 h-4 mr-2" />Pausar</>
-                  ) : (
-                    <><Play className="w-4 h-4 mr-2" />Retomar</>
-                  )}
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={skipRest}
-                >
-                  <SkipForward className="w-4 h-4 mr-2" />
-                  Pular descanso
-                </Button>
-              </div>
+          <Card className="mb-6 border-primary/50 bg-primary/5">
+            <CardContent className="py-6 text-center">
+              <Clock className="w-12 h-12 mx-auto mb-3 text-primary animate-pulse" />
+              <h2 className="text-4xl font-bold mb-2">{formatTime(restTimeLeft)}</h2>
+              <p className="text-muted-foreground mb-2">Tempo de descanso</p>
+              {userRestTime !== null ? (
+                <p className="text-xs text-primary/70 mb-4 flex items-center justify-center gap-1">
+                  <Settings className="w-3 h-3" />
+                  Configuração pessoal ({userRestTime}s)
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mb-4">Tempo do programa</p>
+              )}
+              <Button onClick={skipRest} variant="outline">
+                <SkipForward className="w-4 h-4 mr-2" />
+                Pular Descanso
+              </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Lista de exercícios */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground font-medium">
-              Todos os exercícios
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 p-3 pt-0">
-            {exercises.map((ex, idx) => {
-              const allSetsCompleted = Array.from({ length: ex.sets }, (_, s) =>
-                completedSets[`${idx}-${s + 1}`]
-              ).every(Boolean);
-              const isCurrent = idx === currentExIdx;
+        {/* Exercício atual */}
+        {!isResting && currentExercise && (
+          <>
+            <ExerciseCard
+              index={currentExIdx + 1}
+              name={currentExercise.name}
+              sets={currentExercise.sets}
+              reps={currentExercise.reps}
+              currentSet={currentSet}
+              completedSetKeys={new Set(Object.keys(completedSets).filter(k => completedSets[k]))}
+              getSetKey={(exIdx, setNum) => `${exIdx - 1}-${setNum}`}
+              description={currentExercise.description}
+              notes={currentExercise.notes}
+            />
 
+            {/* Registro de repetições */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-lg">Registrar Série {currentSet}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="max-w-xs mx-auto">
+                  <label className="text-sm text-muted-foreground mb-2 block text-center">
+                    Repetições realizadas
+                  </label>
+                  <div className="flex gap-2 items-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setCurrentReps(Math.max(0, getCurrentReps() - 1))}
+                    >
+                      -
+                    </Button>
+                    <Input
+                      type="number"
+                      value={getCurrentReps() || ""}
+                      placeholder={currentExercise.reps}
+                      onChange={e => setCurrentReps(parseInt(e.target.value) || 0)}
+                      className="text-xl font-bold text-center"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setCurrentReps(getCurrentReps() + 1)}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Sugestão e descanso */}
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Meta:</strong> {currentExercise.reps} repetições
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    <Clock className="w-3 h-3 inline mr-1" />
+                    Descanso:{" "}
+                    {userRestTime !== null ? (
+                      <span className="text-primary font-medium">{userRestTime}s (pessoal)</span>
+                    ) : (
+                      <span>{currentExercise.rest}s (programa)</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* PR anterior */}
+                {(() => {
+                  const pr = getPreviousPR(currentExercise.name);
+                  if (!pr) return null;
+                  return (
+                    <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
+                      <p className="text-sm font-medium text-primary flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        Melhor: {pr} reps
+                      </p>
+                      {prExercise === currentExercise.name && (
+                        <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30 text-xs">
+                          <Trophy className="w-3 h-3 mr-1" />
+                          Novo PR!
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* Botões de ação */}
+            <div className="space-y-3">
+              <Button size="lg" className="w-full" onClick={handleCompleteSet}>
+                <Check className="w-5 h-5 mr-2" />
+                {currentSet >= currentExercise.sets && currentExIdx >= exercises.length - 1
+                  ? "Finalizar Treino"
+                  : currentSet >= currentExercise.sets
+                  ? "Próximo Exercício"
+                  : "Completar Série"}
+              </Button>
+
+              <Button size="lg" variant="outline" className="w-full" onClick={handleSkipExercise}>
+                <SkipForward className="w-5 h-5 mr-2" />
+                Pular Exercício
+              </Button>
+
+              <Button
+                size="lg"
+                variant="destructive"
+                className="w-full"
+                onClick={() => { setShowEndDialog(true); haptic.light(); }}
+              >
+                <X className="w-5 h-5 mr-2" />
+                Encerrar Treino
+              </Button>
+            </div>
+          </>
+        )}
+      </main>
+
+      {/* Modal — Lista de exercícios */}
+      <Dialog open={showExerciseList} onOpenChange={setShowExerciseList}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Exercícios do Treino</DialogTitle>
+            <DialogDescription>Selecione para ir diretamente a qualquer exercício</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-4">
+            {exercises.map((ex, idx) => {
+              const isCurrent = idx === currentExIdx;
+              const isDone = idx < currentExIdx;
               return (
-                <div
+                <button
                   key={idx}
-                  className={`flex items-center gap-3 p-2.5 rounded-lg transition-all ${
+                  onClick={() => handleJumpToExercise(idx)}
+                  className={`w-full p-4 rounded-lg border-2 text-left transition-all hover:border-primary/50 hover:bg-accent/50 ${
                     isCurrent
-                      ? "bg-primary/10 border border-primary/20"
-                      : allSetsCompleted
-                      ? "opacity-50"
-                      : "opacity-70"
+                      ? "border-primary bg-primary/10"
+                      : isDone
+                      ? "border-green-500/30 bg-green-500/5"
+                      : "border-border"
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                    allSetsCompleted
-                      ? "bg-green-500/20 text-green-400"
-                      : isCurrent
-                      ? "bg-primary/20 text-primary"
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                    {allSetsCompleted ? (
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    ) : isCurrent ? (
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    ) : (
-                      <Dumbbell className="w-3 h-3" />
-                    )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-semibold text-muted-foreground">{idx + 1}</span>
+                        <h3 className="font-semibold">{ex.name}</h3>
+                        {isCurrent && <Badge variant="default" className="ml-2">Atual</Badge>}
+                        {isDone && (
+                          <Badge variant="outline" className="ml-2 border-green-500 text-green-500">
+                            <Check className="w-3 h-3 mr-1" />
+                            Completo
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span>{ex.sets} séries</span>
+                        <span>•</span>
+                        <span>{ex.reps} reps</span>
+                        <span>•</span>
+                        <span>{ex.rest}s descanso</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isCurrent ? "text-primary" : ""}`}>
-                      {ex.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {ex.sets}x{ex.reps}
-                    </p>
-                  </div>
-                  {isCurrent && (
-                    <Badge className="bg-primary/20 text-primary border-primary/30 text-xs shrink-0">
-                      Agora
-                    </Badge>
-                  )}
-                </div>
+                </button>
               );
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-        {/* Botão de reiniciar */}
-        <Button
-          variant="ghost"
-          className="w-full text-muted-foreground text-xs"
-          onClick={() => {
-            setCurrentExIdx(0);
-            setCurrentSet(1);
-            setCompletedSets({});
-            setTotalCompleted(0);
-            skipRest();
-          }}
-        >
-          <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-          Reiniciar treino
-        </Button>
-      </main>
+      {/* Dialog — Encerrar antecipado */}
+      <Dialog open={showEndDialog} onOpenChange={setShowEndDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Encerrar Treino Antecipadamente?</DialogTitle>
+            <DialogDescription>
+              Você completou {currentExIdx} de {exercises.length} exercícios.
+              <br /><br />
+              O progresso será descartado, mas você pode recomeçar quando quiser.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button size="lg" variant="destructive" className="w-full" onClick={handleEndEarly}>
+              <X className="w-5 h-5 mr-2" />
+              Sim, Encerrar
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full"
+              onClick={() => { setShowEndDialog(false); haptic.light(); }}
+            >
+              Continuar Treinando
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

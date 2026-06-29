@@ -1,82 +1,12 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1768747951375,
-      "tag": "0000_secret_black_knight",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1768748093495,
-      "tag": "0001_free_luke_cage",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1769017839906,
-      "tag": "0002_great_marrow",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1769025610884,
-      "tag": "0003_worthless_leo",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1769452337365,
-      "tag": "0004_young_the_fury",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1769478471466,
-      "tag": "0005_early_gargoyle",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1771609334000,
-      "tag": "0006_brainy_mentor",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1774904682887,
-      "tag": "0007_daffy_winter_soldier",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "5",
-      "when": 1774908299567,
-      "tag": "0008_overrated_killraven",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "5",
-      "when": 1777325744629,
-      "tag": "0009_quick_spyke",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "5",
-      "when": 1777335061703,
-      "tag": "0010_careless_nightshade",
+      "version": "7",
+      "when": 1782765210915,
+      "tag": "0000_sloppy_big_bertha",
       "breakpoints": true
     }
   ]
