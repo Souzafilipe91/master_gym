@@ -1,8 +1,9 @@
 import { eq, and, desc, asc, gte, lte, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import { 
-  InsertUser, users, cycles, workoutTypes, muscleGroups, exercises, 
-  workoutExercises, workoutLogs, exerciseLogs, weightLogs, 
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import {
+  InsertUser, users, cycles, workoutTypes, muscleGroups, exercises,
+  workoutExercises, workoutLogs, exerciseLogs, weightLogs,
   cardioRecommendations, cardioLogs, anamneses, InsertAnamnese,
   achievements, userAchievements, savedAiWorkouts, InsertSavedAiWorkout,
   savedDiets, InsertSavedDiet,
@@ -15,7 +16,8 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+      _db = drizzle(pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -61,7 +63,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
+    } else if (ENV.adminEmail && user.email === ENV.adminEmail) {
       values.role = 'admin';
       updateSet.role = 'admin';
     }
@@ -78,7 +80,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -406,7 +409,7 @@ export async function unlockAchievement(userId: number, achievementId: number) {
 export async function saveAiWorkout(data: InsertSavedAiWorkout) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(savedAiWorkouts).values(data).$returningId();
+  const [result] = await db.insert(savedAiWorkouts).values(data).returning({ id: savedAiWorkouts.id });
   return { id: result.id };
 }
 
@@ -500,7 +503,7 @@ export async function checkAndUnlockAchievements(userId: number) {
 export async function saveDiet(data: InsertSavedDiet) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(savedDiets).values(data);
+  const [result] = await db.insert(savedDiets).values(data).returning({ id: savedDiets.id });
   return result;
 }
 
