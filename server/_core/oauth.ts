@@ -6,6 +6,7 @@ import { ENV } from "./env";
 import { sdk } from "./sdk";
 
 function getRequestBaseUrl(req: Request): string {
+  if (ENV.appUrl) return ENV.appUrl;
   const forwarded = req.headers["x-forwarded-proto"] as string | undefined;
   const proto = forwarded ? forwarded.split(",")[0].trim() : req.protocol;
   return `${proto}://${req.get("host")}`;

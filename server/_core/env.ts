@@ -6,4 +6,5 @@ export const ENV = {
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   adminEmail: process.env.ADMIN_EMAIL ?? "",
+  appUrl: process.env.APP_URL ?? "",
 };
