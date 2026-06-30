@@ -41,7 +41,8 @@ const ALLOWED_ORIGINS = [
   "http://127.0.0.1:5173",
   // App mobile (deep link scheme)
   "mastergym://",
-  // Produção web (ajuste conforme seu domínio)
+  // Produção web
+  "https://master-gym-vtr5.onrender.com",
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim()) : []),
 ];
 
@@ -79,6 +80,8 @@ function corsMiddleware(req: Request, res: Response, next: NextFunction) {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  // Confiar no proxy reverso do Render/Cloudflare para req.protocol ser https
+  app.set("trust proxy", 1);
   // CORS — deve vir antes de qualquer rota
   app.use(corsMiddleware);
   // Configure body parser with larger size limit for file uploads
