@@ -5,6 +5,12 @@ import { getSessionCookieOptions } from "./cookies";
 import { ENV } from "./env";
 import { sdk } from "./sdk";
 
+function getRequestBaseUrl(req: Request): string {
+  const forwarded = req.headers["x-forwarded-proto"] as string | undefined;
+  const proto = forwarded ? forwarded.split(",")[0].trim() : req.protocol;
+  return `${proto}://${req.get("host")}`;
+}
+
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
   return typeof value === "string" ? value : undefined;
@@ -118,7 +124,7 @@ export function registerOAuthRoutes(app: Express) {
     const isMobile = mobileRedirectUri ? isMobileDeepLink(mobileRedirectUri) : false;
 
     const state = isMobile && mobileRedirectUri ? btoa(mobileRedirectUri) : btoa("/");
-    const callbackUrl = `${req.protocol}://${req.get("host")}/api/auth/google/callback`;
+    const callbackUrl = `${getRequestBaseUrl(req)}/api/auth/google/callback`;
 
     res.redirect(302, buildGoogleAuthUrl(callbackUrl, state));
   });
@@ -135,7 +141,7 @@ export function registerOAuthRoutes(app: Express) {
 
     const redirectUri = state ? decodeStateToRedirectUri(state) : "/";
     const isMobile = redirectUri ? isMobileDeepLink(redirectUri) : false;
-    const callbackUrl = `${req.protocol}://${req.get("host")}/api/auth/google/callback`;
+    const callbackUrl = `${getRequestBaseUrl(req)}/api/auth/google/callback`;
 
     try {
       const tokens = await exchangeGoogleCode(code, callbackUrl);
@@ -194,7 +200,7 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     const state = btoa(mobileRedirectUri);
-    const callbackUrl = `${req.protocol}://${req.get("host")}/api/auth/google/callback`;
+    const callbackUrl = `${getRequestBaseUrl(req)}/api/auth/google/callback`;
     const loginUrl = buildGoogleAuthUrl(callbackUrl, state);
 
     res.json({ loginUrl, state, callbackUrl });
