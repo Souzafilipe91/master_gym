@@ -171,13 +171,6 @@ function AuthScreen() {
           </CardContent>
         </Card>
 
-        {window.location.hostname === "localhost" && (
-          <div className="mt-4 text-center">
-            <Button asChild variant="outline" size="sm" className="border-dashed text-muted-foreground">
-              <a href="/api/auth/dev-login">Dev Login (sem senha)</a>
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
