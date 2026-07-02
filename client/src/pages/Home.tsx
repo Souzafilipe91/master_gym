@@ -1,15 +1,191 @@
+import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getLoginUrl } from "@/const";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Dumbbell, TrendingUp, User, Calendar, Activity } from "lucide-react";
+import { Dumbbell, TrendingUp, Calendar, Activity } from "lucide-react";
 import { Link } from "wouter";
+import { toast } from "sonner";
+
+function AuthScreen() {
+  const utils = trpc.useUtils();
+
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirm, setRegConfirm] = useState("");
+
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: () => utils.auth.me.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess: () => utils.auth.me.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    loginMutation.mutate({ email: loginEmail, password: loginPassword });
+  }
+
+  function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    if (regPassword !== regConfirm) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    registerMutation.mutate({ name: regName, email: regEmail, password: regPassword });
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/10 p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-primary/10 rounded-full">
+              <Dumbbell className="w-16 h-16 text-primary" />
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Gym Master
+          </h1>
+          <p className="text-muted-foreground mt-2">Programa de Treino Personalizado</p>
+        </div>
+
+        <div className="grid gap-4 grid-cols-3 mb-6">
+          <div className="text-center p-3 bg-card rounded-lg border border-border">
+            <Calendar className="w-6 h-6 mx-auto mb-1 text-primary" />
+            <p className="text-xs font-semibold">4 Ciclos</p>
+            <p className="text-xs text-muted-foreground">52 Semanas</p>
+          </div>
+          <div className="text-center p-3 bg-card rounded-lg border border-border">
+            <TrendingUp className="w-6 h-6 mx-auto mb-1 text-primary" />
+            <p className="text-xs font-semibold">Progressão</p>
+            <p className="text-xs text-muted-foreground">Automática</p>
+          </div>
+          <div className="text-center p-3 bg-card rounded-lg border border-border">
+            <Activity className="w-6 h-6 mx-auto mb-1 text-primary" />
+            <p className="text-xs font-semibold">Treinos</p>
+            <p className="text-xs text-muted-foreground">A, B, C, D</p>
+          </div>
+        </div>
+
+        <Card className="border-primary/30 shadow-2xl shadow-primary/20">
+          <CardContent className="pt-6">
+            <Tabs defaultValue="login">
+              <TabsList className="grid grid-cols-2 w-full mb-6">
+                <TabsTrigger value="login">Entrar</TabsTrigger>
+                <TabsTrigger value="register">Cadastrar</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <Input
+                      id="login-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={loginEmail}
+                      onChange={e => setLoginEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Senha</Label>
+                    <Input
+                      id="login-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={loginPassword}
+                      onChange={e => setLoginPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+                    {loginMutation.isPending ? "Entrando..." : "Entrar"}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="register">
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-name">Nome</Label>
+                    <Input
+                      id="reg-name"
+                      type="text"
+                      placeholder="Seu nome completo"
+                      value={regName}
+                      onChange={e => setRegName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-email">Email</Label>
+                    <Input
+                      id="reg-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={regEmail}
+                      onChange={e => setRegEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-password">Senha</Label>
+                    <Input
+                      id="reg-password"
+                      type="password"
+                      placeholder="Mínimo 6 caracteres"
+                      value={regPassword}
+                      onChange={e => setRegPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-confirm">Confirmar Senha</Label>
+                    <Input
+                      id="reg-confirm"
+                      type="password"
+                      placeholder="••••••••"
+                      value={regConfirm}
+                      onChange={e => setRegConfirm(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
+                    {registerMutation.isPending ? "Cadastrando..." : "Criar Conta"}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {window.location.hostname === "localhost" && (
+          <div className="mt-4 text-center">
+            <Button asChild variant="outline" size="sm" className="border-dashed text-muted-foreground">
+              <a href="/api/auth/dev-login">Dev Login (sem senha)</a>
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
   const { data: cycles } = trpc.cycles.getAll.useQuery();
-
 
   if (loading) {
     return (
@@ -23,75 +199,14 @@ export default function Home() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-accent/10">
-        <div className="container max-w-4xl">
-          <Card className="border-primary/30 shadow-2xl shadow-primary/20">
-            <CardHeader className="text-center space-y-4 pb-8">
-              <div className="flex justify-center">
-                <div className="p-4 bg-primary/10 rounded-full">
-                  <Dumbbell className="w-16 h-16 text-primary" />
-                </div>
-              </div>
-              <CardTitle className="text-4xl font-bold">
-                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Gym Master
-                </span>
-              </CardTitle>
-              <CardDescription className="text-lg">
-                Programa de Treino Personalizado de 1 Ano
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="text-center p-4 bg-card rounded-lg border border-border">
-                  <Calendar className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <h3 className="font-semibold">4 Ciclos</h3>
-                  <p className="text-sm text-muted-foreground">52 Semanas</p>
-                </div>
-                <div className="text-center p-4 bg-card rounded-lg border border-border">
-                  <TrendingUp className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <h3 className="font-semibold">Progressão</h3>
-                  <p className="text-sm text-muted-foreground">Automática</p>
-                </div>
-                <div className="text-center p-4 bg-card rounded-lg border border-border">
-                  <Activity className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <h3 className="font-semibold">Treinos</h3>
-                  <p className="text-sm text-muted-foreground">A, B, C, D</p>
-                </div>
-              </div>
-              <div className="text-center pt-4 space-y-3">
-                <Button asChild size="lg" className="w-full md:w-auto">
-                  <a href={getLoginUrl()}>
-                    <User className="w-4 h-4 mr-2" />
-                    Entrar com Google
-                  </a>
-                </Button>
-                {/* Botão de dev — visível apenas em localhost */}
-                {window.location.hostname === "localhost" && (
-                  <div>
-                    <Button asChild size="lg" variant="outline" className="w-full md:w-auto border-dashed">
-                      <a href="/api/auth/dev-login">
-                        Entrar (modo dev — sem Google)
-                      </a>
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+    return <AuthScreen />;
   }
 
-  // Dashboard para usuário autenticado
-  const currentCycle = cycles?.[0]; // Por enquanto, sempre mostra o primeiro ciclo
+  const currentCycle = cycles?.[0];
 
   return (
     <div className="min-h-screen bg-background">
       <main className="container py-8">
-        {/* Ciclo Atual */}
         <div className="mb-8">
           <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5">
             <CardHeader>
@@ -117,7 +232,6 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* Acesso Rápido */}
         <div>
           <h2 className="text-2xl font-bold mb-4">Acesso Rápido</h2>
           <div className="grid gap-4 md:grid-cols-3">
@@ -156,7 +270,6 @@ export default function Home() {
                 </CardHeader>
               </Card>
             </Link>
-
           </div>
         </div>
       </main>

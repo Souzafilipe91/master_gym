@@ -1,5 +1,8 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
+import { promisify } from 'util';
+import { TRPCError } from "@trpc/server";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
@@ -7,6 +10,22 @@ import * as db from "./db";
 import { updateUserWeight } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { buildPersonaPrompt } from "./persona";
+import { sdk } from "./_core/sdk";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString('hex');
+  const buf = await scryptAsync(password, salt, 64) as Buffer;
+  return `${buf.toString('hex')}.${salt}`;
+}
+
+async function verifyPassword(storedHash: string, supplied: string): Promise<boolean> {
+  const [hashed, salt] = storedHash.split('.');
+  const hashedBuf = Buffer.from(hashed, 'hex');
+  const suppliedBuf = await scryptAsync(supplied, salt, 64) as Buffer;
+  return timingSafeEqual(hashedBuf, suppliedBuf);
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -15,11 +34,47 @@ export const appRouter = router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      ctx.res.cookie(COOKIE_NAME, '', { ...cookieOptions, maxAge: 0 });
+      return { success: true } as const;
     }),
+    register: publicProcedure
+      .input(z.object({
+        name: z.string().min(1, "Nome é obrigatório"),
+        email: z.string().email("Email inválido"),
+        password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const existing = await db.getUserByEmail(input.email);
+        if (existing) {
+          throw new TRPCError({ code: "CONFLICT", message: "Email já cadastrado" });
+        }
+        const passwordHash = await hashPassword(input.password);
+        const user = await db.createEmailUser({ name: input.name, email: input.email, passwordHash });
+        const sessionToken = await sdk.createSessionToken(user.openId, { name: user.name || '', expiresInMs: ONE_YEAR_MS });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        return { success: true };
+      }),
+    login: publicProcedure
+      .input(z.object({
+        email: z.string().email("Email inválido"),
+        password: z.string().min(1, "Senha é obrigatória"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await db.getUserByEmail(input.email);
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Email ou senha inválidos" });
+        }
+        const valid = await verifyPassword(user.passwordHash, input.password);
+        if (!valid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Email ou senha inválidos" });
+        }
+        await db.upsertUser({ openId: user.openId, lastSignedIn: new Date() });
+        const sessionToken = await sdk.createSessionToken(user.openId, { name: user.name || '', expiresInMs: ONE_YEAR_MS });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        return { success: true };
+      }),
   }),
 
   user: router({

@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  passwordHash: text("passwordHash"),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: varchar("role", { length: 10 }).notNull().default("user"),
   currentWeight: decimal("currentWeight", { precision: 5, scale: 2 }),
