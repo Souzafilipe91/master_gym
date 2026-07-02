@@ -4,7 +4,7 @@ services:
     runtime: node
     region: oregon
     plan: free
-    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && pnpm run build && pnpm db:push
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && pnpm run build && npx drizzle-kit migrate
     startCommand: pnpm run start
     healthCheckPath: /api/system/health
     envVars:
