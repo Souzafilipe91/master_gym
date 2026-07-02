@@ -1,13 +1,14 @@
 import { useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useLockScreenWidget } from '@/hooks/useLockScreenWidget';
+import { useAuth } from '@/_core/hooks/useAuth';
 
-/**
- * Componente que gerencia automaticamente o widget de tela bloqueada
- * Atualiza o badge e notificações com base no progresso do usuário
- */
 export function LockScreenWidgetManager() {
-  const { data: workoutLogs } = trpc.workoutLogs.getMyLogs.useQuery({ limit: 50 });
+  const { isAuthenticated } = useAuth();
+  const { data: workoutLogs } = trpc.workoutLogs.getMyLogs.useQuery(
+    { limit: 50 },
+    { enabled: isAuthenticated },
+  );
   const { updateWorkoutWidget } = useLockScreenWidget();
 
   useEffect(() => {
