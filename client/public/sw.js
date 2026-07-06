@@ -1,5 +1,5 @@
-const CACHE_NAME = 'filipe-treinos-v5';
-const DATA_CACHE_NAME = 'filipe-treinos-data-v5';
+const CACHE_NAME = 'filipe-treinos-v6';
+const DATA_CACHE_NAME = 'filipe-treinos-data-v6';
 
 const urlsToCache = [
   '/',
@@ -113,8 +113,27 @@ self.addEventListener('fetch', (event) => {
           });
         })
     );
+  } else if (event.request.mode === 'navigate') {
+    // Network-first for HTML navigation: always fetch fresh HTML, fall back to cache offline
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match('/').then(response => {
+            return response || new Response('Offline', { status: 503 });
+          });
+        })
+    );
   } else {
-    // Cache-first strategy for static assets
+    // Cache-first strategy for static assets (JS, CSS, images)
     event.respondWith(
       caches.match(event.request)
         .then((response) => {
@@ -139,13 +158,9 @@ self.addEventListener('fetch', (event) => {
 
             return response;
           }).catch(() => {
-            // For navigation requests, serve the index.html from cache (SPA fallback)
-            if (event.request.mode === 'navigate') {
-              return caches.match('/').then(response => {
-                return response || new Response('Offline', { status: 503 });
-              });
-            }
-            return caches.match('/');
+            return caches.match('/').then(response => {
+              return response || new Response('Offline', { status: 503 });
+            });
           });
         })
     );
