@@ -14,21 +14,25 @@ export const systemRouter = router({
     })),
 
   dbHealth: publicProcedure.query(async () => {
-    const { getDb } = await import("../db");
-    const db = await getDb();
-    if (!db) return { ok: false, error: "DATABASE_URL not set or pool failed to initialize" };
+    const url = process.env.DATABASE_URL;
+    if (!url) return { ok: false, error: "DATABASE_URL not set" };
     try {
-      const { sql } = await import("drizzle-orm");
-      await db.execute(sql`SELECT 1`);
+      const { Pool } = await import("pg");
+      const pool = new Pool({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000 });
+      const client = await pool.connect();
+      await client.query("SELECT 1");
+      client.release();
+      await pool.end();
       return { ok: true };
     } catch (e: any) {
-      const cause = e?.cause;
       return {
         ok: false,
-        error: String(e?.message ?? e),
-        cause: cause ? String(cause?.message ?? cause) : undefined,
-        code: e?.code ?? cause?.code,
-        detail: JSON.stringify(e, Object.getOwnPropertyNames(e)),
+        error: e?.message,
+        code: e?.code,
+        errno: e?.errno,
+        syscall: e?.syscall,
+        address: e?.address,
+        port: e?.port,
       };
     }
   }),
