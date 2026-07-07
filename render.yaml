@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && pnpm run build
-    startCommand: npx drizzle-kit migrate && pnpm run start
+    startCommand: pnpm run start
     healthCheckPath: /api/system/health
     envVars:
       - key: NODE_ENV

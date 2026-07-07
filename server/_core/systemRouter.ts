@@ -13,6 +13,19 @@ export const systemRouter = router({
       ok: true,
     })),
 
+  dbHealth: publicProcedure.query(async () => {
+    const { getDb } = await import("../db");
+    const db = await getDb();
+    if (!db) return { ok: false, error: "DATABASE_URL not set or pool failed to initialize" };
+    try {
+      const { sql } = await import("drizzle-orm");
+      await db.execute(sql`SELECT 1`);
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: String(e?.message ?? e) };
+    }
+  }),
+
   notifyOwner: adminProcedure
     .input(
       z.object({

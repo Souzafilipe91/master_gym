@@ -10,7 +10,7 @@ const t = initTRPC.context<TrpcContext>().create({
       console.error('[tRPC internal error]', error);
       return {
         ...shape,
-        message: `[DEBUG] ${error.message}`,
+        message: 'Erro interno do servidor. Tente novamente.',
       };
     }
     return shape;
