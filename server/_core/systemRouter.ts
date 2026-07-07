@@ -22,7 +22,14 @@ export const systemRouter = router({
       await db.execute(sql`SELECT 1`);
       return { ok: true };
     } catch (e: any) {
-      return { ok: false, error: String(e?.message ?? e) };
+      const cause = e?.cause;
+      return {
+        ok: false,
+        error: String(e?.message ?? e),
+        cause: cause ? String(cause?.message ?? cause) : undefined,
+        code: e?.code ?? cause?.code,
+        detail: JSON.stringify(e, Object.getOwnPropertyNames(e)),
+      };
     }
   }),
 
