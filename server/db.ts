@@ -183,14 +183,52 @@ export async function getWorkoutExercises(cycleId: number, workoutTypeId: number
 }
 
 // Workout Logs
-export async function getUserWorkoutLogs(userId: number, limit?: number) {
+export async function getUserWorkoutLogs(
+  userId: number,
+  limit?: number,
+  filters?: { startDate?: string; endDate?: string; workoutTypeId?: number }
+) {
   const db = await getDb();
   if (!db) return [];
-  const query = db.select().from(workoutLogs).where(eq(workoutLogs.userId, userId)).orderBy(desc(workoutLogs.workoutDate));
-  if (limit) {
-    return await query.limit(limit);
-  }
+
+  const conditions = [eq(workoutLogs.userId, userId)];
+  if (filters?.startDate) conditions.push(gte(workoutLogs.workoutDate, filters.startDate));
+  if (filters?.endDate) conditions.push(lte(workoutLogs.workoutDate, filters.endDate));
+  if (filters?.workoutTypeId) conditions.push(eq(workoutLogs.workoutTypeId, filters.workoutTypeId));
+
+  const query = db
+    .select()
+    .from(workoutLogs)
+    .where(and(...conditions))
+    .orderBy(desc(workoutLogs.workoutDate));
+  if (limit) return await query.limit(limit);
   return await query;
+}
+
+export async function getWorkoutVolumeByPeriod(userId: number, days: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const startDateStr = startDate.toISOString().split("T")[0];
+
+  return await db
+    .select({
+      date: workoutLogs.workoutDate,
+      volume: sql<number>`COALESCE(SUM(${exerciseLogs.load}::numeric * ${exerciseLogs.reps}), 0)`,
+    })
+    .from(workoutLogs)
+    .leftJoin(exerciseLogs, eq(exerciseLogs.workoutLogId, workoutLogs.id))
+    .where(
+      and(
+        eq(workoutLogs.userId, userId),
+        eq(workoutLogs.completed, true),
+        gte(workoutLogs.workoutDate, startDateStr)
+      )
+    )
+    .groupBy(workoutLogs.workoutDate)
+    .orderBy(asc(workoutLogs.workoutDate));
 }
 
 export async function getWorkoutLogById(id: number) {

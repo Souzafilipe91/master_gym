@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Dumbbell, Clock, TrendingUp, Info } from "lucide-react";
 import { Link, useParams } from "wouter";
@@ -20,7 +21,17 @@ export default function TreinoDetalhes() {
   );
 
   const { data: cycles } = trpc.cycles.getAll.useQuery();
-  const currentCycle = cycles?.[0]; // Por enquanto, sempre usa o primeiro ciclo
+  const [selectedCycleId, setSelectedCycleId] = useState<string>(
+    () => localStorage.getItem("gym-selected-cycle-id") ?? ""
+  );
+  const currentCycle = selectedCycleId
+    ? (cycles?.find((c) => c.id === parseInt(selectedCycleId)) ?? cycles?.[0])
+    : cycles?.[0];
+
+  const handleCycleChange = (value: string) => {
+    setSelectedCycleId(value);
+    localStorage.setItem("gym-selected-cycle-id", value);
+  };
 
   const { data: workoutExercises } = trpc.workoutExercises.getByCycleAndType.useQuery(
     { cycleId: currentCycle?.id || 0, workoutTypeId: workoutType?.id || 0 },
@@ -102,11 +113,22 @@ export default function TreinoDetalhes() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Ciclo Atual</p>
-                  <p className="font-medium flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    {currentCycle?.name.split(":")[0]}
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-1">Ciclo</p>
+                  <Select
+                    value={selectedCycleId || String(cycles?.[0]?.id ?? "")}
+                    onValueChange={handleCycleChange}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Selecionar ciclo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cycles?.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          Ciclo {c.cycleNumber} — {c.focus}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               {workoutType.description && (

@@ -1,16 +1,27 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, TrendingUp, Weight, Activity, Calendar } from "lucide-react";
+import { ArrowLeft, TrendingUp, Weight, Activity, Calendar, BarChart3 } from "lucide-react";
 import { Link } from "wouter";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function Progresso() {
+  const [volumeDays, setVolumeDays] = useState(30);
+
   const { data: weightLogs, isLoading: loadingWeight } = trpc.weightLogs.getMyLogs.useQuery({ limit: 30 });
   const { data: workoutLogs, isLoading: loadingWorkouts } = trpc.workoutLogs.getMyLogs.useQuery({ limit: 30 });
   const { data: cardioLogs, isLoading: loadingCardio } = trpc.cardio.getMyLogs.useQuery({ limit: 30 });
+  const { data: volumeData } = trpc.workoutLogs.getVolumeData.useQuery({ days: volumeDays });
+
+  // Preparar dados para o gráfico de volume
+  const volumeChartData = volumeData?.map((d) => ({
+    date: format(new Date(d.date), "dd/MM", { locale: ptBR }),
+    volume: Math.round(Number(d.volume)),
+  })) || [];
 
   // Preparar dados para o gráfico de peso
   const weightChartData = weightLogs
@@ -170,6 +181,60 @@ export default function Progresso() {
                 <p className="text-muted-foreground">Nenhum registro de peso ainda</p>
                 <p className="text-sm text-muted-foreground mt-2">
                   Comece a registrar seu peso para acompanhar sua evolução
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Gráfico de Volume Total */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Volume Total de Treino
+                </CardTitle>
+                <CardDescription>Soma de carga × reps por sessão (kg)</CardDescription>
+              </div>
+              <Select value={String(volumeDays)} onValueChange={(v) => setVolumeDays(parseInt(v))}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="14">14 dias</SelectItem>
+                  <SelectItem value="30">30 dias</SelectItem>
+                  <SelectItem value="60">60 dias</SelectItem>
+                  <SelectItem value="90">90 dias</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {volumeChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={volumeChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" style={{ fontSize: "12px" }} />
+                  <YAxis stroke="rgba(255,255,255,0.5)" style={{ fontSize: "12px" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(20, 20, 20, 0.95)",
+                      border: "1px solid rgba(220, 38, 38, 0.3)",
+                      borderRadius: "8px",
+                    }}
+                    formatter={(value: number) => [`${value} kg`, "Volume"]}
+                  />
+                  <Bar dataKey="volume" fill="rgb(220, 38, 38)" radius={[4, 4, 0, 0]} name="Volume (kg)" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="py-12 text-center">
+                <BarChart3 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">Nenhum dado de volume disponível</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Complete treinos para ver seu volume total
                 </p>
               </div>
             )}

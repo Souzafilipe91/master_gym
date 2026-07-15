@@ -30,34 +30,34 @@
 ### Sistema de Progressão de Carga
 - [x] Progressão automática de carga a cada 2-3 semanas
 - [x] Cálculo de cargas baseado no peso inicial e progressão
-- [ ] Ajuste manual de cargas quando necessário
-- [ ] Histórico de progressão por exercício
+- [x] Ajuste manual de cargas quando necessário
+- [x] Histórico de progressão por exercício
 
 ### Programa Anual (4 Ciclos)
 - [x] Ciclo 1: Hipertrofia com Força (Semanas 1-12)
 - [x] Ciclo 2: Hipertrofia Máxima (Semanas 13-24)
 - [x] Ciclo 3: Força e Definição (Semanas 25-36)
 - [x] Ciclo 4: Definição com Força (Semanas 37-52)
-- [ ] Navegação entre ciclos
+- [x] Navegação entre ciclos
 - [x] Visualização de objetivos e foco de cada ciclo
 
 ### Registro de Treinos
 - [x] Registrar treino realizado com data
-- [ ] Marcar exercícios como completos
-- [ ] Registrar cargas utilizadas por série
-- [ ] Registrar repetições executadas por série
-- [ ] Adicionar notas/observações ao treino
+- [x] Marcar exercícios como completos
+- [x] Registrar cargas utilizadas por série
+- [x] Registrar repetições executadas por série
+- [x] Adicionar notas/observações ao treino
 
 ### Histórico e Progresso
 - [x] Histórico completo de treinos realizados
-- [ ] Filtrar histórico por período
-- [ ] Filtrar histórico por tipo de treino (A, B, C, D)
+- [x] Filtrar histórico por período
+- [x] Filtrar histórico por tipo de treino (A, B, C, D)
 - [ ] Exportar histórico (opcional)
 
 ### Gráficos de Progresso
-- [ ] Gráfico de evolução de força por exercício
+- [x] Gráfico de evolução de força por exercício
 - [x] Gráfico de evolução de peso corporal
-- [ ] Gráfico de volume total de treino
+- [x] Gráfico de volume total de treino
 - [x] Gráfico de frequência semanal
 
 ### Seção de Cardio
@@ -95,7 +95,7 @@
 - [x] Página dedicada mostrando anamnese completa do usuário
 - [x] Exibir todas as informações do Check Shape
 - [x] Layout organizado e fácil de ler
-- [ ] Permitir edição da anamnese
+- [x] Permitir edição da anamnese
 
 ### Formulário de Anamnese para Novos Usuários
 - [x] Formulário completo de anamnese
@@ -108,7 +108,7 @@
 - [x] Criar endpoint para gerar treino personalizado
 - [x] Interface para solicitar geração de treino
 - [x] Exibir treino gerado com opção de salvar
-- [ ] Histórico de treinos gerados por IA
+- [x] Histórico de treinos gerados por IA
 
 
 ## Bugs Reportados
@@ -134,7 +134,7 @@
 - [x] Implementar backend (tRPC) para atualizar peso do usuário
 - [x] Adicionar botão de edição no perfil da sidebar
 - [x] Permitir ajuste manual de cargas dos exercícios
-- [ ] Salvar cargas personalizadas no banco de dados (estado local por enquanto)
+- [x] Salvar cargas personalizadas no banco de dados (via exerciseLogs — pré-fill automático do último registro)
 
 
 ## GIFs Demonstrativos de Exercícios

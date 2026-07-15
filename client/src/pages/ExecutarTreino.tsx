@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Check, Clock, Dumbbell, Play, Pause, SkipForward, Maximize, Minimize, List, ChevronRight, X, Calculator, Trophy, TrendingUp, Settings } from "lucide-react";
 import { toast } from "sonner";
@@ -29,7 +30,9 @@ export default function ExecutarTreino() {
   const [workoutStartTime] = useState(new Date());
   const [showExerciseList, setShowExerciseList] = useState(false);
   const [showEndWorkoutDialog, setShowEndWorkoutDialog] = useState(false);
-  const [prExerciseId, setPrExerciseId] = useState<number | null>(null); // ID do exercício que bateu PR
+  const [showFinishDialog, setShowFinishDialog] = useState(false);
+  const [workoutNotes, setWorkoutNotes] = useState("");
+  const [prExerciseId, setPrExerciseId] = useState<number | null>(null);
   const haptic = useHaptic();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -39,7 +42,10 @@ export default function ExecutarTreino() {
   );
 
   const { data: cycles } = trpc.cycles.getAll.useQuery();
-  const currentCycle = cycles?.[0];
+  const savedCycleId = localStorage.getItem("gym-selected-cycle-id");
+  const currentCycle = savedCycleId
+    ? (cycles?.find((c) => c.id === parseInt(savedCycleId)) ?? cycles?.[0])
+    : cycles?.[0];
 
   const { data: workoutExercises } = trpc.workoutExercises.getByCycleAndType.useQuery(
     { cycleId: currentCycle?.id || 0, workoutTypeId: workoutType?.id || 0 },
@@ -186,7 +192,7 @@ export default function ExecutarTreino() {
       } else {
         // Treino completo!
         haptic.workoutComplete();
-        handleFinishWorkout();
+        setShowFinishDialog(true);
       }
     } else {
       // Próxima série
@@ -240,23 +246,27 @@ export default function ExecutarTreino() {
     await handleFinishWorkout();
   };
 
-  const handleFinishWorkout = async () => {
+  const handleFinishWorkout = async (userNotes?: string) => {
     if (!currentCycle || !workoutType) return;
 
+    const durationMin = Math.round((new Date().getTime() - workoutStartTime.getTime()) / 60000);
+    const autoNote = `Treino realizado em ${durationMin} minutos`;
+    const finalNotes = userNotes
+      ? `${autoNote}. ${userNotes}`
+      : autoNote;
+
     try {
-      // Criar log do treino
       const workoutLog = await createWorkoutLog.mutateAsync({
         workoutTypeId: workoutType.id,
         cycleId: currentCycle.id,
         workoutDate: (() => {
-          // Usar data local (não UTC) para evitar erro de fuso horário
           const now = new Date();
           const year = now.getFullYear();
           const month = String(now.getMonth() + 1).padStart(2, '0');
           const day = String(now.getDate()).padStart(2, '0');
           return `${year}-${month}-${day}`;
         })(),
-        notes: `Treino realizado em ${Math.round((new Date().getTime() - workoutStartTime.getTime()) / 60000)} minutos`,
+        notes: finalNotes,
       });
 
       // Atualizar para marcar como completo
@@ -677,6 +687,37 @@ export default function ExecutarTreino() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog de Finalização com Notas */}
+      <Dialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Treino Concluído!</DialogTitle>
+            <DialogDescription>
+              Parabéns! Todos os exercícios foram completados. Adicione uma observação se quiser.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <Textarea
+              placeholder="Ex: Senti bem no agachamento, aumentar carga na próxima..."
+              value={workoutNotes}
+              onChange={(e) => setWorkoutNotes(e.target.value)}
+              rows={3}
+            />
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={() => {
+                setShowFinishDialog(false);
+                handleFinishWorkout(workoutNotes || undefined);
+              }}
+            >
+              <Check className="w-5 h-5 mr-2" />
+              Salvar Treino
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog de Confirmação de Encerramento Antecipado */}
       <Dialog open={showEndWorkoutDialog} onOpenChange={setShowEndWorkoutDialog}>
         <DialogContent className="max-w-md">
@@ -684,14 +725,18 @@ export default function ExecutarTreino() {
             <DialogTitle>Encerrar Treino Antecipadamente?</DialogTitle>
             <DialogDescription>
               Você completou apenas {currentExerciseIndex} de {exercisesWithDetails?.length} exercícios.
-              <br /><br />
               O treino será salvo como <strong>completo</strong> e contará como um dia de treino realizado.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="flex flex-col gap-3 mt-4">
-            <Button 
-              size="lg" 
+          <div className="mt-4 space-y-3">
+            <Textarea
+              placeholder="Observações (opcional)..."
+              value={workoutNotes}
+              onChange={(e) => setWorkoutNotes(e.target.value)}
+              rows={2}
+            />
+            <Button
+              size="lg"
               variant="destructive"
               onClick={handleEndWorkoutEarly}
               className="w-full"
@@ -699,9 +744,8 @@ export default function ExecutarTreino() {
               <Check className="w-5 h-5 mr-2" />
               Sim, Encerrar e Salvar
             </Button>
-            
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               variant="outline"
               onClick={() => {
                 setShowEndWorkoutDialog(false);

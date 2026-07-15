@@ -144,9 +144,23 @@ export const appRouter = router({
   // Logs de Treino
   workoutLogs: router({
     getMyLogs: protectedProcedure
-      .input(z.object({ limit: z.number().optional() }).optional())
+      .input(z.object({
+        limit: z.number().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        workoutTypeId: z.number().optional(),
+      }).optional())
       .query(async ({ ctx, input }) => {
-        return await db.getUserWorkoutLogs(ctx.user.id, input?.limit);
+        return await db.getUserWorkoutLogs(ctx.user.id, input?.limit, {
+          startDate: input?.startDate,
+          endDate: input?.endDate,
+          workoutTypeId: input?.workoutTypeId,
+        });
+      }),
+    getVolumeData: protectedProcedure
+      .input(z.object({ days: z.number().default(30) }))
+      .query(async ({ ctx, input }) => {
+        return await db.getWorkoutVolumeByPeriod(ctx.user.id, input.days);
       }),
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
