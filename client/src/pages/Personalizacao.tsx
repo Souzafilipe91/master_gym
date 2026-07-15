@@ -48,21 +48,38 @@ function getContrastFg(backgroundOklch: string): string {
 function oklchToHex(oklch: string): string {
   const match = oklch.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
   if (!match) return "#888888";
-  const l = parseFloat(match[1]);
-  const c = parseFloat(match[2]);
-  const h = parseFloat(match[3]);
-  const s = Math.min(1, c / 0.28);
-  const hslToRgb = (hh: number, ss: number, ll: number) => {
-    const a = ss * Math.min(ll, 1 - ll);
-    const f = (n: number) => {
-      const k = (n + hh / 30) % 12;
-      return ll - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    };
-    return [f(0), f(8), f(4)];
+  const L = parseFloat(match[1]);
+  const C = parseFloat(match[2]);
+  const H = parseFloat(match[3]);
+
+  // OKLCH → OKLab
+  const hRad = H * Math.PI / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+
+  // OKLab → LMS (cube roots)
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+  // Cube to get linear LMS
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+
+  // LMS → Linear sRGB
+  const rLin = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const gLin = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const bLin = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+  // Linear sRGB → sRGB gamma
+  const toSrgb = (v: number) => {
+    v = Math.max(0, Math.min(1, v));
+    return v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
   };
-  const [r, g, b] = hslToRgb(h, s, l);
-  const toHex = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0");
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+
+  const toHex = (v: number) => Math.round(toSrgb(v) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(rLin)}${toHex(gLin)}${toHex(bLin)}`;
 }
 
 // ─── ColorPicker: input visível estilizado como círculo ──────────────────────
@@ -209,11 +226,11 @@ export default function Personalizacao() {
                       <div className="flex gap-1.5 shrink-0">
                         <div
                           className="w-8 h-8 rounded-full border border-border shadow-sm"
-                          style={{ backgroundColor: oklchToHex(preset.colors.background) }}
+                          style={{ backgroundColor: preset.colors.background }}
                         />
                         <div
                           className="w-8 h-8 rounded-full border border-border shadow-sm"
-                          style={{ backgroundColor: oklchToHex(preset.colors.primary) }}
+                          style={{ backgroundColor: preset.colors.primary }}
                         />
                       </div>
                       <div className="flex-1">
