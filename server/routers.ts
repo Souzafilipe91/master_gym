@@ -501,9 +501,11 @@ Não use tabelas, apenas o formato de cabeçalho ### para cada exercício. Forma
   calistenia: router({
     generate: protectedProcedure
       .input(z.object({
-        focus: z.string().optional(), // ex: "peito", "pernas", "full body"
-        duration: z.number().optional(), // minutos disponíveis
+        focus: z.string().optional(),
+        duration: z.number().optional(),
         difficulty: z.enum(["iniciante", "intermediario", "avancado"]).optional(),
+        equipment: z.enum(["nenhum", "barra", "elastico", "completo"]).optional(),
+        mode: z.enum(["padrao", "circuito", "amrap", "emom"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const anamnese = await db.getAnamneseByUserId(ctx.user.id);
@@ -517,7 +519,63 @@ Não use tabelas, apenas o formato de cabeçalho ### para cada exercício. Forma
         const durationText = input.duration ? `${input.duration} minutos` : anamnese.sessionDuration || "60 minutos";
         const difficultyText = input.difficulty || (anamnese.trainingExperience?.toLowerCase().includes("iniciante") ? "iniciante" : "intermediario");
 
-        const prompt = `Você é um especialista em calistenia e treino funcional. Crie um treino de calistenia completo para ser feito EM CASA, sem equipamentos (ou com itens básicos como barra de porta e elástico).
+        const equipmentDescriptions: Record<string, string> = {
+          nenhum: "Sem nenhum equipamento — use apenas o peso do corpo (flexões, agachamentos, prancha, burpees, mountain climbers, afundos, etc.)",
+          barra: "Barra de porta disponível — inclua exercícios de tração (pull-up, chin-up, Australian row) além dos exercícios de peso corporal",
+          elastico: "Elásticos de resistência disponíveis — use para adicionar resistência a agachamentos, remadas, extensões e exercícios de ombro",
+          completo: "Barra de porta + elásticos disponíveis — máxima variedade: inclua trações, exercícios com elástico e peso corporal",
+        };
+        const equipmentText = equipmentDescriptions[input.equipment ?? "nenhum"];
+
+        const mode = input.mode ?? "padrao";
+
+        const modeInstructions: Record<string, string> = {
+          padrao: `Estrutura do treino:
+1. Título com # (ex: # Treino de Calistenia Full Body)
+2. Aquecimento (5-10 min): 3-4 exercícios
+3. Bloco principal (${durationText}): 6-10 exercícios
+4. Desaquecimento (5 min): 2-3 exercícios
+5. Dicas de progressão
+
+Para cada exercício: **Séries:** X | **Reps:** Y-Z | **Descanso:** Xs`,
+
+          circuito: `Este é um treino em FORMATO DE CIRCUITO. O aluno fará todos os exercícios em sequência sem pausas longas entre eles, descansará entre as rodadas e repetirá o circuito completo.
+
+Estrutura:
+1. Título com # incluindo "— Circuito X Rodadas" (ex: # Treino Circuito Full Body — 3 Rodadas)
+2. Aquecimento (5 min): 3 exercícios
+3. Circuito principal: 6-8 exercícios
+4. Desaquecimento (5 min): 2 exercícios
+
+Para cada exercício no circuito principal: **Séries:** [NÚMERO DE RODADAS] | **Reps:** Y-Z | **Descanso:** 0s
+(Descanso 0s entre exercícios; o descanso real de 60-90s é apenas ENTRE RODADAS)
+Inclua após o título do circuito principal uma linha: **Descanso entre rodadas:** 90s`,
+
+          amrap: `Este é um treino AMRAP (As Many Rounds As Possible). O aluno tem um tempo fixo e deve completar o máximo de rodadas do circuito.
+
+Estrutura:
+1. Título com # incluindo "AMRAP ${durationText}" (ex: # AMRAP ${durationText} — Full Body)
+2. Aquecimento (5 min): 3 exercícios com séries/reps normais
+3. Bloco AMRAP: 5-7 exercícios com reps moderadas (10-15 por exercício — deve dar pra completar cada exercício em 30-45s)
+4. Desaquecimento (5 min): 2 exercícios
+
+Para cada exercício no bloco AMRAP: **Séries:** 1 | **Reps:** Y | **Descanso:** 0s
+Inclua após o título do bloco AMRAP: **Tempo total:** ${input.duration || 20} min`,
+
+          emom: `Este é um treino EMOM (Every Minute On the Minute). A cada minuto o aluno executa os reps especificados e descansa o restante do minuto.
+
+Estrutura:
+1. Título com # incluindo "EMOM ${durationText}" (ex: # EMOM ${durationText} — Core e Cardio)
+2. Aquecimento (5 min): 3 exercícios normais
+3. Bloco EMOM: 6-10 exercícios (um por minuto, rotacionando)
+4. Desaquecimento (3 min)
+
+Para cada exercício no EMOM: **Séries:** 1 | **Reps:** Y | **Descanso:** 60s
+Os reps devem ser completáveis em 25-35 segundos (o resto é descanso no minuto).
+O bloco EMOM tem ${input.duration || 20} minutos — alterne os exercícios em loop.`,
+        };
+
+        const baseHeader = `Você é um especialista em calistenia e treino funcional. Crie um treino de calistenia para ser feito EM CASA.
 
 DADOS DO ALUNO:
 - Idade: ${anamnese.age} anos
@@ -529,26 +587,24 @@ DADOS DO ALUNO:
 - Restrições médicas: ${anamnese.medicalRestrictions || "Nenhuma"}
 - Exercícios a evitar: ${anamnese.exerciseRestrictions || "Nenhum"}
 
-PARÂMETROS DO TREINO:
+PARÂMETROS:
 - ${focusText}
 - Duração: ${durationText}
-- Nível de dificuldade: ${difficultyText}
+- Nível: ${difficultyText}
+- Equipamentos: ${equipmentText}
 
-Crie um treino de calistenia detalhado. IMPORTANTE: use EXATAMENTE o formato abaixo para cada exercício:
+IMPORTANTE: use EXATAMENTE este formato para cada exercício:
 
 ### N. Nome do Exercício
 **Séries:** X | **Reps:** Y-Z | **Descanso:** Xs
-**Execução:** Descrição detalhada de como executar o exercício corretamente, incluindo posicionamento do corpo, movimento e respiração.
-**Dica:** Observação importante ou variação mais fácil/difícil.
+**Execução:** Como executar corretamente.
+**Dica:** Variação ou ponto de atenção.
 
-Estrutura do treino:
-1. Título do treino com # (ex: # Treino de Calistenia Full Body)
-2. Aquecimento (5-10 min): 3-4 exercícios no formato acima
-3. Bloco principal (${durationText}): 6-10 exercícios no formato acima
-4. Desaquecimento/alongamento (5 min): 2-3 exercícios no formato acima
-5. Dicas de progressão para as próximas semanas
+${modeInstructions[mode]}
 
-Use emojis para deixar mais visual e motivador. Não use tabelas, apenas o formato de cabeçalho ### para cada exercício.`;
+Use emojis. Não use tabelas, apenas o formato ### para cada exercício.`;
+
+        const prompt = baseHeader;
 
         const response = await invokeLLM({
           messages: [
@@ -557,10 +613,14 @@ Use emojis para deixar mais visual e motivador. Não use tabelas, apenas o forma
           ],
         });
 
+        const rawContent = response.choices[0]?.message?.content || "Erro ao gerar treino";
+        // Prefixo de modo embutido no conteúdo para que o executor possa detectar o modo
+        const modePrefix = mode !== "padrao" ? `[MODE:${mode}]\n` : "";
+
         return {
           success: true,
-          workoutPlan: response.choices[0]?.message?.content || "Erro ao gerar treino",
-          params: { focus: input.focus, duration: input.duration, difficulty: difficultyText },
+          workoutPlan: modePrefix + rawContent,
+          params: { focus: input.focus, duration: input.duration, difficulty: difficultyText, mode },
         };
       }),
   }),

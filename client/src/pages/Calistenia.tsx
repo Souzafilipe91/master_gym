@@ -31,10 +31,26 @@ const DIFFICULTY_OPTIONS = [
   { value: "avancado" as const, label: "Avançado", color: "bg-red-500/20 text-red-400 border-red-500/30" },
 ];
 
+const EQUIPMENT_OPTIONS = [
+  { value: "nenhum" as const, label: "Sem equipamentos", description: "Só o corpo", emoji: "🏠" },
+  { value: "barra" as const, label: "Barra de porta", description: "+ Pull-ups e Australian rows", emoji: "🔧" },
+  { value: "elastico" as const, label: "Elásticos", description: "+ Resistência variável", emoji: "🔴" },
+  { value: "completo" as const, label: "Barra + elásticos", description: "Máxima variedade", emoji: "💪" },
+];
+
+const MODE_OPTIONS = [
+  { value: "padrao" as const, label: "Séries × Reps", description: "Formato clássico com séries e repetições", emoji: "📋" },
+  { value: "circuito" as const, label: "Circuito", description: "Todos os exercícios em sequência, N rodadas", emoji: "🔄" },
+  { value: "amrap" as const, label: "AMRAP", description: "Máximo de rodadas no tempo disponível", emoji: "⏱️" },
+  { value: "emom" as const, label: "EMOM", description: "1 exercício por minuto, 60s cronometrado", emoji: "🕐" },
+];
+
 export default function Calistenia() {
   const [focus, setFocus] = useState("full body");
   const [duration, setDuration] = useState(45);
   const [difficulty, setDifficulty] = useState<"iniciante" | "intermediario" | "avancado">("intermediario");
+  const [equipment, setEquipment] = useState<"nenhum" | "barra" | "elastico" | "completo">("nenhum");
+  const [mode, setMode] = useState<"padrao" | "circuito" | "amrap" | "emom">("padrao");
   const [result, setResult] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -55,9 +71,11 @@ export default function Calistenia() {
   const handleSave = () => {
     if (!result) return;
     const focusLabel = FOCUS_OPTIONS.find(f => f.value === focus)?.label || focus;
+    const modeLabel = MODE_OPTIONS.find(m => m.value === mode)?.label || mode;
+    const modeSuffix = mode !== "padrao" ? ` [${modeLabel}]` : "";
     saveMutation.mutate({
       type: "calistenia",
-      title: `Calistenia ${focusLabel} — ${duration}min (${difficulty})`,
+      title: `Calistenia ${focusLabel} — ${duration}min (${difficulty})${modeSuffix}`,
       content: result,
       focus,
       duration,
@@ -78,7 +96,7 @@ export default function Calistenia() {
   const handleGenerate = () => {
     setSaved(false);
     setSavedId(null);
-    generateMutation.mutate({ focus, duration, difficulty });
+    generateMutation.mutate({ focus, duration, difficulty, equipment, mode });
   };
 
   const handleCopy = async () => {
@@ -208,6 +226,60 @@ export default function Calistenia() {
                     }`}
                   >
                     {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Equipamentos */}
+            <div>
+              <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                <Dumbbell className="w-4 h-4 text-primary" />
+                Equipamentos disponíveis
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {EQUIPMENT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setEquipment(opt.value)}
+                    className={`flex items-start gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
+                      equipment === opt.value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="text-base leading-none mt-0.5">{opt.emoji}</span>
+                    <div>
+                      <p className="font-medium leading-tight">{opt.label}</p>
+                      <p className="text-xs text-muted-foreground font-normal mt-0.5">{opt.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Modo de treino */}
+            <div>
+              <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                <RefreshCw className="w-4 h-4 text-primary" />
+                Modo de treino
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {MODE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setMode(opt.value)}
+                    className={`flex items-start gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all text-left ${
+                      mode === opt.value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="text-base leading-none mt-0.5">{opt.emoji}</span>
+                    <div>
+                      <p className="font-medium leading-tight">{opt.label}</p>
+                      <p className="text-xs text-muted-foreground font-normal mt-0.5">{opt.description}</p>
+                    </div>
                   </button>
                 ))}
               </div>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   ArrowLeft, Check, Clock, SkipForward, List,
-  ChevronRight, Trophy, X, Settings, Maximize, Minimize, TrendingUp,
+  ChevronRight, Trophy, X, Settings, Maximize, Minimize, TrendingUp, RotateCcw, Plus,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -16,6 +16,8 @@ import { useHaptic } from "@/hooks/useHaptic";
 import { useFullscreen } from "@/hooks/useFullscreen";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
+
+type WorkoutMode = "padrao" | "circuito" | "amrap" | "emom";
 
 interface CalisthenicsExercise {
   name: string;
@@ -29,6 +31,19 @@ interface CalisthenicsExercise {
 interface ParsedWorkout {
   title: string;
   exercises: CalisthenicsExercise[];
+  restBetweenRounds?: number;
+  amrapMinutes?: number;
+}
+
+function detectMode(content: string): WorkoutMode {
+  const firstLine = content.split("\n")[0].trim();
+  const m = firstLine.match(/^\[MODE:(\w+)\]/);
+  if (m && (m[1] === "circuito" || m[1] === "amrap" || m[1] === "emom")) return m[1] as WorkoutMode;
+  return "padrao";
+}
+
+function stripModePrefix(content: string): string {
+  return content.replace(/^\[MODE:\w+\]\n/, "");
 }
 
 // ─── Parser de markdown para exercícios ──────────────────────────────────────
@@ -39,6 +54,8 @@ function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
   let title = "Treino de Calistenia";
   let currentExercise: Partial<CalisthenicsExercise> | null = null;
   let descriptionLines: string[] = [];
+  let restBetweenRounds: number | undefined;
+  let amrapMinutes: number | undefined;
 
   const flushExercise = () => {
     if (currentExercise?.name) {
@@ -63,7 +80,10 @@ function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
 
     if (line.startsWith("### ")) {
       flushExercise();
-      currentExercise = { name: line.replace(/^###\s+/, "").replace(/\*+/g, "").trim() };
+      const rawName = line.replace(/^###\s+/, "").replace(/\*+/g, "").trim();
+      // strip leading "N." numbering so PR keys stay stable across workouts
+      const name = rawName.replace(/^\d+\.\s*/, "");
+      currentExercise = { name };
       continue;
     }
 
@@ -87,6 +107,19 @@ function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
     }
 
     if (currentExercise) {
+      // Formato principal da IA: **Séries:** 3 | **Reps:** 10-12 | **Descanso:** 60s
+      const combinedLine = line.match(/s[eé]ries[^:]*:\s*\*{0,2}\s*(\d+).*?reps?[^:]*:\s*\*{0,2}\s*([^\s|*,]+)/i);
+      if (combinedLine) {
+        currentExercise.sets = parseInt(combinedLine[1]);
+        currentExercise.reps = combinedLine[2];
+        const inlineRest = line.match(/descanso[^:]*:\s*\*{0,2}\s*(\d+)\s*(s|seg|min|minuto)/i);
+        if (inlineRest) {
+          currentExercise.rest = inlineRest[2].toLowerCase().startsWith("min")
+            ? parseInt(inlineRest[1]) * 60
+            : parseInt(inlineRest[1]);
+        }
+        continue;
+      }
       const restLine = line.match(/descanso[:\s]+(\d+)\s*(s|seg|min|minuto)/i);
       if (restLine) {
         currentExercise.rest = restLine[2].toLowerCase().startsWith("min")
@@ -111,16 +144,30 @@ function parseWorkoutMarkdown(markdown: string): ParsedWorkout {
         continue;
       }
     }
+
+    // Metadados globais (fora de exercícios): descanso entre rodadas e tempo AMRAP
+    const rbrMatch = line.match(/descanso entre rodadas[^:]*:\s*\*{0,2}\s*(\d+)\s*(s|seg|min|minuto)/i);
+    if (rbrMatch) {
+      restBetweenRounds = rbrMatch[2].toLowerCase().startsWith("min")
+        ? parseInt(rbrMatch[1]) * 60
+        : parseInt(rbrMatch[1]);
+    }
+    const amrapMatch = line.match(/tempo total[^:]*:\s*\*{0,2}\s*(\d+)\s*(min|h)/i);
+    if (amrapMatch) {
+      amrapMinutes = amrapMatch[2] === "h"
+        ? parseInt(amrapMatch[1]) * 60
+        : parseInt(amrapMatch[1]);
+    }
   }
   flushExercise();
 
   if (exercises.length === 0) {
     ["Agachamento", "Flexão de Braço", "Prancha", "Burpee", "Mountain Climber", "Afundo"].forEach((name, i) => {
-      exercises.push({ name, sets: i === 2 || i === 4 ? 3 : 3, reps: i === 2 ? "30s" : "10-12", rest: 60 });
+      exercises.push({ name, sets: 3, reps: i === 2 ? "30s" : "10-12", rest: 60 });
     });
   }
 
-  return { title, exercises };
+  return { title, exercises, restBetweenRounds, amrapMinutes };
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -136,7 +183,9 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
   const haptic = useHaptic();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
 
-  const parsed = parseWorkoutMarkdown(workoutContent);
+  const workoutMode = detectMode(workoutContent);
+  const cleanContent = stripModePrefix(workoutContent);
+  const parsed = parseWorkoutMarkdown(cleanContent);
   const exercises = parsed.exercises;
 
   // Chave única de localStorage para este treino
@@ -156,7 +205,29 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
   const [prExercise, setPrExercise] = useState<string | null>(null);
   const [workoutStartTime] = useState(new Date());
 
+  // ─── Estado específico de circuito ───────────────────────────────────────
+  // currentSet = rodada atual; currentExIdx = posição no circuito
+  const numRounds = workoutMode === "circuito"
+    ? Math.max(...exercises.map(e => e.sets), 1)
+    : 1;
+
+  // ─── Estado específico de AMRAP ───────────────────────────────────────────
+  const amrapTotalSeconds = (parsed.amrapMinutes ?? (workoutMode === "amrap" ? 20 : 0)) * 60;
+  const [amrapTimeLeft, setAmrapTimeLeft] = useState(amrapTotalSeconds);
+  const [amrapRunning, setAmrapRunning] = useState(false);
+  const [amrapRounds, setAmrapRounds] = useState(0);
+  const [amrapCurrentExIdx, setAmrapCurrentExIdx] = useState(0);
+
+  // ─── Estado específico de EMOM ────────────────────────────────────────────
+  const [emomTimeLeft, setEmomTimeLeft] = useState(60);
+  const [emomRunning, setEmomRunning] = useState(false);
+  const [emomCurrentExIdx, setEmomCurrentExIdx] = useState(0);
+  const [emomMinute, setEmomMinute] = useState(1);
+  const [emomDone, setEmomDone] = useState(false);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const amrapTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const emomTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ─── Restaurar estado salvo ───────────────────────────────────────────────
 
@@ -210,6 +281,61 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [restTimerRunning]);
 
+  // ─── Timer AMRAP ──────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (amrapRunning && amrapTimeLeft > 0) {
+      amrapTimerRef.current = setInterval(() => {
+        setAmrapTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(amrapTimerRef.current!);
+            setAmrapRunning(false);
+            setFinished(true);
+            haptic.workoutComplete();
+            toast.success("Tempo esgotado! AMRAP finalizado.");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => { if (amrapTimerRef.current) clearInterval(amrapTimerRef.current); };
+  }, [amrapRunning]);
+
+  // ─── Timer EMOM ───────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (emomRunning && emomTimeLeft > 0) {
+      emomTimerRef.current = setInterval(() => {
+        setEmomTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(emomTimerRef.current!);
+            setEmomRunning(false);
+            const nextIdx = (emomCurrentExIdx + 1) % exercises.length;
+            const nextMinute = emomMinute + 1;
+            const totalMinutes = parsed.amrapMinutes ?? exercises.length;
+            if (emomMinute >= totalMinutes) {
+              setEmomDone(true);
+              setFinished(true);
+              haptic.workoutComplete();
+              toast.success("EMOM finalizado!");
+            } else {
+              setEmomCurrentExIdx(nextIdx);
+              setEmomMinute(nextMinute);
+              setEmomTimeLeft(60);
+              setEmomRunning(true);
+              haptic.restEnd();
+              toast.success(`Minuto ${nextMinute}: ${exercises[nextIdx]?.name}`);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => { if (emomTimerRef.current) clearInterval(emomTimerRef.current); };
+  }, [emomRunning, emomCurrentExIdx, emomMinute]);
+
   const getUserRestTime = () => {
     const saved = localStorage.getItem("gym-rest-time-seconds");
     return saved && !isNaN(parseInt(saved)) ? parseInt(saved) : null;
@@ -259,7 +385,7 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
     localStorage.setItem(getPrKey(name), reps.toString());
   };
 
-  // ─── Completar série ──────────────────────────────────────────────────────
+  // ─── Completar série / exercício ─────────────────────────────────────────
 
   const handleCompleteSet = () => {
     const key = `${currentExIdx}-${currentSet}`;
@@ -282,6 +408,35 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
       }
     }
 
+    // ── Lógica de circuito: avança por exercício, depois incrementa rodada ──
+    if (workoutMode === "circuito") {
+      const isLastExercise = currentExIdx >= exercises.length - 1;
+      const isLastRound = currentSet >= numRounds;
+
+      if (isLastExercise && isLastRound) {
+        setFinished(true);
+        localStorage.removeItem(storageKey);
+        haptic.workoutComplete();
+        toast.success("🎉 Circuito concluído!");
+        return;
+      }
+
+      if (isLastExercise) {
+        // Fim de rodada: descanso entre rodadas, depois volta pro primeiro exercício
+        setCurrentExIdx(0);
+        setCurrentSet(prev => prev + 1);
+        haptic.success();
+        toast.success(`Rodada ${currentSet} completa! Descanse.`);
+        startRest(parsed.restBetweenRounds ?? 90);
+      } else {
+        // Próximo exercício no circuito, sem descanso
+        setCurrentExIdx(prev => prev + 1);
+        haptic.light();
+      }
+      return;
+    }
+
+    // ── Lógica padrão ────────────────────────────────────────────────────────
     const isLastSet = currentSet >= currentExercise.sets;
     const isLastExercise = currentExIdx >= exercises.length - 1;
 
@@ -383,7 +538,198 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
     );
   }
 
-  // ─── Tela de execução ─────────────────────────────────────────────────────
+  // ─── Tela AMRAP ───────────────────────────────────────────────────────────
+
+  if (workoutMode === "amrap" && !finished) {
+    const amrapExercises = exercises.filter(e => e.sets === 1);
+    const currentAmrapEx = amrapExercises[amrapCurrentExIdx % amrapExercises.length];
+    return (
+      <div className="min-h-screen bg-background pb-8">
+        <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+          <div className="container py-4 flex items-center justify-between">
+            <Button variant="ghost" size="sm" onClick={onFinish ?? (() => navigate("/calistenia"))}>
+              <ArrowLeft className="w-4 h-4 mr-2" />Cancelar
+            </Button>
+            <div className="text-center">
+              <h1 className="text-base font-bold">AMRAP</h1>
+              <p className="text-xs text-muted-foreground">{workoutTitle}</p>
+            </div>
+            <div className="w-20" />
+          </div>
+        </header>
+        <main className="container py-6 space-y-4 max-w-lg">
+          {/* Countdown */}
+          <Card className={`border-2 ${amrapRunning ? "border-primary" : "border-border"}`}>
+            <CardContent className="py-6 text-center">
+              <Clock className={`w-10 h-10 mx-auto mb-3 ${amrapRunning ? "text-primary animate-pulse" : "text-muted-foreground"}`} />
+              <p className="text-5xl font-mono font-bold">{formatTime(amrapTimeLeft)}</p>
+              <p className="text-sm text-muted-foreground mt-2">Tempo restante</p>
+              {!amrapRunning && amrapTimeLeft === amrapTotalSeconds && (
+                <Button className="mt-4" onClick={() => { setAmrapRunning(true); haptic.success(); }}>
+                  Iniciar AMRAP
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Rodadas + exercício atual */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card>
+              <CardContent className="py-4 text-center">
+                <p className="text-3xl font-bold text-primary">{amrapRounds}</p>
+                <p className="text-xs text-muted-foreground mt-1">Rodadas completas</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-4 text-center">
+                <p className="text-lg font-bold">{(amrapCurrentExIdx % amrapExercises.length) + 1}/{amrapExercises.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Exercício atual</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {currentAmrapEx && amrapRunning && (
+            <Card className="border-primary/50 bg-primary/5">
+              <CardContent className="py-5">
+                <p className="text-xs text-primary font-medium mb-1">AGORA</p>
+                <p className="text-xl font-bold">{currentAmrapEx.name}</p>
+                <p className="text-sm text-muted-foreground mt-1">Meta: {currentAmrapEx.reps} reps</p>
+                <div className="flex gap-2 mt-4">
+                  <Button className="flex-1" onClick={() => {
+                    const nextIdx = amrapCurrentExIdx + 1;
+                    if (nextIdx % amrapExercises.length === 0) {
+                      setAmrapRounds(r => r + 1);
+                      haptic.success();
+                      toast.success(`Rodada ${amrapRounds + 1} completa!`);
+                    } else {
+                      haptic.light();
+                    }
+                    setAmrapCurrentExIdx(nextIdx);
+                  }}>
+                    <Check className="w-4 h-4 mr-2" />
+                    Feito — próximo
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lista de exercícios do circuito AMRAP */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Circuito AMRAP</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {amrapExercises.map((ex, idx) => {
+                const globalIdx = amrapCurrentExIdx % amrapExercises.length;
+                return (
+                  <div key={idx} className={`flex items-center justify-between p-2 rounded-lg ${idx === globalIdx && amrapRunning ? "bg-primary/10 border border-primary/30" : "bg-muted/30"}`}>
+                    <div>
+                      <p className="text-sm font-medium">{ex.name}</p>
+                      <p className="text-xs text-muted-foreground">{ex.reps} reps</p>
+                    </div>
+                    {idx === globalIdx && amrapRunning && <Badge variant="default" className="text-xs">Atual</Badge>}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          <Button variant="destructive" className="w-full" onClick={() => {
+            setAmrapRunning(false);
+            setFinished(true);
+            clearInterval(amrapTimerRef.current!);
+            haptic.workoutComplete();
+          }}>
+            <X className="w-4 h-4 mr-2" />Encerrar AMRAP
+          </Button>
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Tela EMOM ────────────────────────────────────────────────────────────
+
+  if (workoutMode === "emom" && !finished) {
+    const emomExercises = exercises.filter(e => e.sets === 1);
+    const totalEmomMinutes = parsed.amrapMinutes ?? emomExercises.length;
+    const currentEmomEx = emomExercises[emomCurrentExIdx % emomExercises.length];
+    const progress = emomRunning ? ((emomMinute - 1) / totalEmomMinutes) * 100 : 0;
+    return (
+      <div className="min-h-screen bg-background pb-8">
+        <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+          <div className="container py-4 flex items-center justify-between">
+            <Button variant="ghost" size="sm" onClick={onFinish ?? (() => navigate("/calistenia"))}>
+              <ArrowLeft className="w-4 h-4 mr-2" />Cancelar
+            </Button>
+            <div className="text-center">
+              <h1 className="text-base font-bold">EMOM</h1>
+              <p className="text-xs text-muted-foreground">{emomMinute}/{totalEmomMinutes} min</p>
+            </div>
+            <div className="w-20" />
+          </div>
+          <div className="container pb-2">
+            <div className="w-full bg-muted rounded-full h-1.5">
+              <div className="bg-primary h-1.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        </header>
+        <main className="container py-6 space-y-4 max-w-lg">
+          {/* Countdown do minuto */}
+          <Card className={`border-2 ${emomRunning ? (emomTimeLeft <= 10 ? "border-red-500" : "border-primary") : "border-border"}`}>
+            <CardContent className="py-6 text-center">
+              <p className={`text-6xl font-mono font-bold ${emomTimeLeft <= 10 ? "text-red-500" : "text-primary"}`}>
+                {emomTimeLeft}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                {emomRunning ? (emomTimeLeft > 10 ? "Faça agora!" : "Prepare para o próximo") : "Pronto?"}
+              </p>
+              {!emomRunning && (
+                <Button className="mt-4" onClick={() => { setEmomRunning(true); haptic.success(); }}>
+                  Iniciar EMOM
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Exercício atual */}
+          {currentEmomEx && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="py-5">
+                <p className="text-xs text-primary font-medium mb-1">MINUTO {emomMinute}</p>
+                <p className="text-2xl font-bold">{currentEmomEx.name}</p>
+                <p className="text-base text-muted-foreground mt-1">{currentEmomEx.reps} reps</p>
+                {currentEmomEx.notes && (
+                  <p className="text-xs text-muted-foreground mt-2 italic">{currentEmomEx.notes}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Próximo exercício */}
+          {emomRunning && emomTimeLeft <= 15 && (
+            <Card className="border-yellow-500/30 bg-yellow-500/5">
+              <CardContent className="py-3">
+                <p className="text-xs text-yellow-600 font-medium mb-1">A SEGUIR</p>
+                <p className="text-base font-semibold">{emomExercises[(emomCurrentExIdx + 1) % emomExercises.length]?.name}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {emomRunning && (
+            <Button variant="destructive" className="w-full" onClick={() => {
+              setEmomRunning(false);
+              setFinished(true);
+              clearInterval(emomTimerRef.current!);
+              haptic.workoutComplete();
+            }}>
+              <X className="w-4 h-4 mr-2" />Encerrar EMOM
+            </Button>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  // ─── Tela de execução (padrão + circuito) ─────────────────────────────────
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -403,7 +749,9 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
             <div className="text-center">
               <h1 className="text-base font-bold truncate max-w-[160px]">{workoutTitle}</h1>
               <p className="text-xs text-muted-foreground">
-                Exercício {currentExIdx + 1} de {exercises.length}
+                {workoutMode === "circuito"
+                  ? `Rodada ${currentSet}/${numRounds} · Ex ${currentExIdx + 1}/${exercises.length}`
+                  : `Exercício ${currentExIdx + 1} de ${exercises.length}`}
               </p>
             </div>
 
@@ -557,7 +905,11 @@ export default function ExecutarCalistenia({ workoutContent, workoutTitle, onFin
             <div className="space-y-3">
               <Button size="lg" className="w-full" onClick={handleCompleteSet}>
                 <Check className="w-5 h-5 mr-2" />
-                {currentSet >= currentExercise.sets && currentExIdx >= exercises.length - 1
+                {workoutMode === "circuito"
+                  ? currentExIdx >= exercises.length - 1
+                    ? currentSet >= numRounds ? "Finalizar Circuito" : `Fim da Rodada ${currentSet} — Descansar`
+                    : "Próximo Exercício"
+                  : currentSet >= currentExercise.sets && currentExIdx >= exercises.length - 1
                   ? "Finalizar Treino"
                   : currentSet >= currentExercise.sets
                   ? "Próximo Exercício"
