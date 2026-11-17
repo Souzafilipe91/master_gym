@@ -29,6 +29,7 @@ import GerarDieta from "./pages/GerarDieta";
 import MinhasDietas from "./pages/MinhasDietas";
 import ContadorCalorias from "./pages/ContadorCalorias";
 import Chat from "./pages/Chat";
+import TreinoPersonagem from "./pages/TreinoPersonagem";
 import { LockScreenWidgetManager } from "./components/LockScreenWidgetManager";
 
 function Router() {
@@ -63,6 +64,7 @@ function Router() {
         <Route path={"/dieta/:id"} component={MinhasDietas} />
         <Route path={"/contador-calorias"} component={ContadorCalorias} />
         <Route path={"/chat"} component={Chat} />
+        <Route path={"/treino-personagem"} component={TreinoPersonagem} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

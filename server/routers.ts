@@ -367,6 +367,83 @@ export const appRouter = router({
         await db.updateAnamnese(ctx.user.id, input);
         return { success: true };
       }),
+    generateWorkoutByReference: protectedProcedure
+      .input(z.object({
+        referenceName: z.string().min(1).max(100),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const anamnese = await db.getAnamneseByUserId(ctx.user.id);
+        if (!anamnese) {
+          throw new Error("Preencha sua anamnese antes de gerar um treino.");
+        }
+
+        const { invokeLLM } = await import("./_core/llm");
+
+        const prompt = `O aluno quer conquistar um físico semelhante ao de **${input.referenceName}**.
+
+DADOS DO ALUNO:
+- Idade: ${anamnese.age} anos
+- Gênero: ${anamnese.gender}
+- Altura: ${anamnese.height} cm
+- Peso atual: ${anamnese.currentWeight} kg
+- Peso alvo: ${anamnese.targetWeight} kg
+- % Gordura corporal: ${anamnese.bodyFat ?? "não informado"}%
+- Medidas: Peito ${anamnese.chest ?? "?"}cm | Cintura ${anamnese.waist ?? "?"}cm | Braço ${anamnese.arm ?? "?"}cm
+
+EXPERIÊNCIA E RESTRIÇÕES:
+- Experiência: ${anamnese.trainingExperience}
+- Lesões anteriores: ${anamnese.previousInjuries || "Nenhuma"}
+- Restrições médicas: ${anamnese.medicalRestrictions || "Nenhuma"}
+- Exercícios a evitar: ${anamnese.exerciseRestrictions || "Nenhum"}
+
+DISPONIBILIDADE:
+- Dias por semana: ${anamnese.availableDays}
+- Duração da sessão: ${anamnese.sessionDuration}
+
+ESTILO DE VIDA:
+- Nível de atividade: ${anamnese.activityLevel}
+- Dieta: ${anamnese.dietType}
+- Suplementação: ${anamnese.supplementation || "Nenhuma"}
+
+Crie um programa de musculação completo com as seguintes seções:
+
+## 🎯 O Físico de ${input.referenceName}
+Descreva as características físicas conhecidas de ${input.referenceName} — grupos musculares em destaque, nível de definição, proporções, e o que torna esse físico reconhecível. Seja específico e técnico (ex: "deltoides bem desenvolvidos com grande separação, peitoral alto e espesso, cintura fina").
+
+## 📐 Estratégia para Chegar Lá
+Explique como o aluno, partindo do perfil acima, deve focar seus esforços. Quais músculos priorizar, qual fase (bulk/cut/recomposição) faz mais sentido agora e por quê.
+
+## 💪 Programa de Treino Inspirado em ${input.referenceName}
+
+Crie ${anamnese.availableDays ?? "4"} dias de treino priorizando os grupos musculares que definem o físico de ${input.referenceName}, respeitando TODAS as restrições do aluno.
+
+Para cada exercício use EXATAMENTE este formato:
+
+### N. Nome do Exercício
+**Séries:** X | **Reps:** Y-Z | **Descanso:** Xs
+**Execução:** Como executar corretamente.
+**Por que está aqui:** Como esse exercício contribui para o físico de ${input.referenceName}.
+
+## 🥗 Nutrição para o Objetivo
+Orientações de dieta e macros específicas para alcançar o físico de referência, considerando o perfil do aluno.
+
+## 📈 Progressão — 12 Semanas
+Dividida em 3 fases de 4 semanas: o que muda em cada fase para aproximar o aluno do objetivo.
+
+Use emojis. Não use tabelas, apenas o formato ### para cada exercício. Responda em português do Brasil.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: buildPersonaPrompt(anamnese) },
+            { role: "user", content: prompt },
+          ],
+          maxTokens: 8192,
+        });
+
+        const workoutPlan = response.choices[0]?.message?.content || "Erro ao gerar treino";
+
+        return { success: true, workoutPlan, referenceName: input.referenceName };
+      }),
     generateWorkout: protectedProcedure
       .input(z.object({
         anamneseId: z.number().optional(),

@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { 
-  Dumbbell, 
-  LayoutDashboard, 
-  Library, 
-  ClipboardList, 
+import {
+  Dumbbell,
+  LayoutDashboard,
+  Library,
+  ClipboardList,
   History,
   FileText,
   Menu,
@@ -20,7 +20,8 @@ import {
   BookOpen,
   Salad,
   Flame,
-  MessageCircle
+  MessageCircle,
+  Clapperboard
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
@@ -61,6 +62,11 @@ const menuItems = [
     title: "Gerar Treino IA",
     href: "/gerar-treino",
     icon: FileText,
+  },
+  {
+    title: "Treino Inspirado em...",
+    href: "/treino-personagem",
+    icon: Clapperboard,
   },
   {
     title: "Evolução de Carga",
