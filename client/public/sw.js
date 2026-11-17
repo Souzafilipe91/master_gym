@@ -1,5 +1,5 @@
-const CACHE_NAME = 'gym-master-v6';
-const DATA_CACHE_NAME = 'gym-master-data-v6';
+const CACHE_NAME = 'gym-master-v7';
+const DATA_CACHE_NAME = 'gym-master-data-v7';
 
 const urlsToCache = [
   '/',
@@ -19,18 +19,15 @@ const API_CACHE_PATTERNS = [
 // Responder a cliques em notificações
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
-  // Ao clicar na notificação de fim de descanso, abrir/focar o app
+
   if (event.notification.tag === 'rest-end') {
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        // Se o app já está aberto, focar nele
         for (const client of clientList) {
           if (client.url && 'focus' in client) {
             return client.focus();
           }
         }
-        // Se não está aberto, abrir nova janela
         if (clients.openWindow) {
           return clients.openWindow('/');
         }
@@ -67,26 +64,34 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch com timeout — se a rede não responder em `ms` ms, rejeita
+function fetchWithTimeout(request, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    fetch(request).then(
+      (res) => { clearTimeout(timer); resolve(res); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
+
+// Fetch event
 self.addEventListener('fetch', (event) => {
-  // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
   const url = new URL(event.request.url);
-  
-  // Check if this is an API request
-  const isAPIRequest = API_CACHE_PATTERNS.some(pattern => 
+
+  const isAPIRequest = API_CACHE_PATTERNS.some(pattern =>
     url.pathname.includes(pattern)
   );
 
   if (isAPIRequest) {
-    // Network-first strategy for API requests
+    // Network-first para APIs
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Clone and cache successful responses
           if (response && response.status === 200) {
             const responseToCache = response.clone();
             caches.open(DATA_CACHE_NAME).then((cache) => {
@@ -96,13 +101,11 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Network failed, try cache
           return caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) {
               console.log('[SW] Serving from cache (offline):', url.pathname);
               return cachedResponse;
             }
-            // No cache available
             return new Response(
               JSON.stringify({ error: 'Offline and no cache available' }),
               {
@@ -114,26 +117,33 @@ self.addEventListener('fetch', (event) => {
         })
     );
   } else if (event.request.mode === 'navigate') {
-    // Network-first for HTML navigation: always fetch fresh HTML, fall back to cache offline
+    // Stale-while-revalidate para navegação HTML:
+    // 1. Serve do cache imediatamente se disponível (sem tela branca no iPhone)
+    // 2. Busca da rede em background e atualiza o cache
+    // 3. Se não há cache, aguarda a rede com timeout de 5s
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match('/').then((cachedResponse) => {
+          const networkFetch = fetchWithTimeout(event.request, 5000)
+            .then((networkResponse) => {
+              if (networkResponse && networkResponse.status === 200) {
+                cache.put('/', networkResponse.clone());
+              }
+              return networkResponse;
+            })
+            .catch(() => {
+              // Rede falhou ou timeout — retornar cache se disponível
+              return cachedResponse || new Response('Offline', { status: 503 });
             });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match('/').then(response => {
-            return response || new Response('Offline', { status: 503 });
-          });
-        })
+
+          // Se temos cache, serve imediatamente e atualiza em background
+          // Se não temos cache, espera a rede
+          return cachedResponse || networkFetch;
+        });
+      })
     );
   } else {
-    // Cache-first strategy for static assets (JS, CSS, images)
+    // Cache-first para assets estáticos (JS, CSS, imagens)
     event.respondWith(
       caches.match(event.request)
         .then((response) => {
