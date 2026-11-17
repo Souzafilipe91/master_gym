@@ -140,17 +140,19 @@ export default function Personalizacao() {
     const fgOklch = getContrastFg(bgOklch);
     const isLight = parseFloat(bgOklch.match(/oklch\(([\d.]+)/)?.[1] || "0") > 0.5;
 
+    const bgMatch = bgOklch.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+    const bgL = bgMatch ? parseFloat(bgMatch[1]) : (isLight ? 0.98 : 0.12);
+    const bgC = bgMatch ? parseFloat(bgMatch[2]) : 0.005;
+    const bgH = bgMatch ? parseFloat(bgMatch[3]) : 285;
+    const clamp = (v: number) => Math.max(0.02, Math.min(0.97, v));
+
     const colors: ThemeColors = {
       primary: primaryOklch,
       primaryFg: getContrastFg(primaryOklch),
       background: bgOklch,
       foreground: fgOklch,
-      card: isLight
-        ? `oklch(from ${bgOklch} calc(l - 0.03) c h)`
-        : `oklch(from ${bgOklch} calc(l + 0.03) c h)`,
-      sidebar: isLight
-        ? `oklch(from ${bgOklch} calc(l - 0.05) c h)`
-        : `oklch(from ${bgOklch} calc(l + 0.02) c h)`,
+      card: `oklch(${clamp(bgL + (isLight ? -0.03 : 0.03)).toFixed(3)} ${bgC.toFixed(3)} ${bgH})`,
+      sidebar: `oklch(${clamp(bgL + (isLight ? -0.05 : 0.02)).toFixed(3)} ${bgC.toFixed(3)} ${bgH})`,
       accent: primaryOklch,
       ring: primaryOklch,
     };

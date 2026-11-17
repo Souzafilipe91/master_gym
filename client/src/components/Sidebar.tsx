@@ -202,9 +202,9 @@ export function Sidebar({ className }: SidebarProps) {
           {/* User Info & Logout */}
           <div className="p-4 border-t border-border">
             <div className="mb-3 p-3 bg-background rounded-lg">
-              <p className="text-sm font-medium truncate">{user?.name || "Filipe Pimenta de Souza"}</p>
+              <p className="text-sm font-medium truncate">{user?.name || "Usuário"}</p>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">Peso: {user?.currentWeight || "83"}kg</p>
+                <p className="text-xs text-muted-foreground">{user?.currentWeight ? `Peso: ${user.currentWeight}kg` : "Peso não informado"}</p>
                 <EditWeightDialog currentWeight={user?.currentWeight} />
               </div>
             </div>

@@ -2,7 +2,7 @@
  * IndexedDB wrapper for offline data storage
  */
 
-const DB_NAME = 'filipe_treinos_offline';
+const DB_NAME = 'gym_master_offline';
 const DB_VERSION = 1;
 
 interface OfflineData {

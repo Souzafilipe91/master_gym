@@ -1,5 +1,5 @@
-const CACHE_NAME = 'filipe-treinos-v6';
-const DATA_CACHE_NAME = 'filipe-treinos-data-v6';
+const CACHE_NAME = 'gym-master-v6';
+const DATA_CACHE_NAME = 'gym-master-data-v6';
 
 const urlsToCache = [
   '/',
